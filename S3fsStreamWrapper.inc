@@ -2,9 +2,9 @@
 
 /**
  * @file
- * Drupal stream wrapper implementation for S3 File System.
+ * Backdrop stream wrapper implementation for S3 File System.
  *
- * Implements DrupalStreamWrapperInterface to provide an Amazon S3 wrapper
+ * Implements BackdropStreamWrapperInterface to provide an Amazon S3 wrapper
  * using the "s3://" scheme. It can optionally take over for the "public://"
  * stream wrapper, too.
  */
@@ -15,7 +15,7 @@
  * In the docs for this class, anywhere you see "<scheme>", it can mean either
  * "s3" or "public", depending on which stream is currently being serviced.
  */
-class S3fsStreamWrapper implements DrupalStreamWrapperInterface {
+class S3fsStreamWrapper implements BackdropStreamWrapperInterface {
 
   /**
    * Stream context (this is set by PHP when a context is used).
@@ -109,9 +109,9 @@ class S3fsStreamWrapper implements DrupalStreamWrapperInterface {
   public function __construct() {
     // Since S3fsStreamWrapper is always constructed with the same inputs (the
     // file URI is not part of construction), we store the constructed settings
-    // statically. This is important for performance because the way Drupal's
+    // statically. This is important for performance because the way Backdrop's
     // APIs are used causes stream wrappers to be frequently re-constructed.
-    $settings = &drupal_static('S3fsStreamWrapper_constructed_settings');
+    $settings = &backdrop_static('S3fsStreamWrapper_constructed_settings');
     if ($settings !== NULL) {
       $this->config = $settings['config'];
       $this->s3 = _s3fs_get_amazons3_client($this->config);
@@ -224,13 +224,13 @@ class S3fsStreamWrapper implements DrupalStreamWrapperInterface {
   }
 
   /***************************************************************************
-                 DrupalStreamWrapperInterface Implementations
-  ***************************************************************************/
+  BackdropStreamWrapperInterface Implementations
+   ***************************************************************************/
 
   /**
    * Static function to determine a file's media type.
    *
-   * Uses Drupal's mimetype mapping, unless a different mapping is specified.
+   * Uses Backdrop's mimetype mapping, unless a different mapping is specified.
    *
    * @return string
    *   The file's MIME type, or 'application/octet-stream' if no type can be
@@ -241,7 +241,7 @@ class S3fsStreamWrapper implements DrupalStreamWrapperInterface {
 
     // Load the default mime type map.
     if (!isset(self::$mimeTypeMapping)) {
-      include_once DRUPAL_ROOT . '/includes/file.mimetypes.inc';
+      include_once BACKDROP_ROOT . '/core/includes/file.mimetypes.inc';
       self::$mimeTypeMapping = file_mimetype_mapping();
     }
 
@@ -251,7 +251,7 @@ class S3fsStreamWrapper implements DrupalStreamWrapperInterface {
     }
 
     $extension = '';
-    $file_parts = explode('.', drupal_basename($uri));
+    $file_parts = explode('.', backdrop_basename($uri));
 
     // Remove the first part: a full filename should not match an extension.
     array_shift($file_parts);
@@ -318,7 +318,7 @@ class S3fsStreamWrapper implements DrupalStreamWrapperInterface {
     $s3_key = str_replace('\\', '/', file_uri_target($this->uri));
 
     // If this is a private:// file, it must be served through the
-    // system/files/$path URL, which allows Drupal to restrict access
+    // system/files/$path URL, which allows Backdrop to restrict access
     // based on who's logged in.
     if (file_uri_scheme($this->uri) == 'private') {
       return url("system/files/$s3_key", array('absolute' => TRUE));
@@ -347,12 +347,12 @@ class S3fsStreamWrapper implements DrupalStreamWrapperInterface {
           // Send requests for public CSS files to /s3fs-css/path/to/file.css.
           // Users must set that path up in the webserver config as a proxy into
           // their S3 bucket's s3fs_public_folder.
-          return "{$GLOBALS['base_url']}/s3fs-css/" . drupal_encode_path($s3_key);
+          return "{$GLOBALS['base_url']}/s3fs-css/" . backdrop_encode_path($s3_key);
         }
         elseif (substr($s3_key, -3) == '.js') {
           // Send requests for public JS files to /s3fs-js/path/to/file.js.
           // Like with CSS, the user must set up that path as a proxy.
-          return "{$GLOBALS['base_url']}/s3fs-js/" . drupal_encode_path($s3_key);
+          return "{$GLOBALS['base_url']}/s3fs-js/" . backdrop_encode_path($s3_key);
         }
       }
 
@@ -387,7 +387,7 @@ class S3fsStreamWrapper implements DrupalStreamWrapperInterface {
     // Forced Save As.
     foreach ($this->saveas as $blob) {
       if (preg_match("^$blob^", $s3_key)) {
-        $filename = drupal_basename($s3_key);
+        $filename = backdrop_basename($s3_key);
         $url_settings['api_args']['ResponseContentDisposition'] = "attachment; filename=\"$filename\"";
         $url_settings['forced_saveas'] = TRUE;
         break;
@@ -395,7 +395,7 @@ class S3fsStreamWrapper implements DrupalStreamWrapperInterface {
     }
 
     // Allow other modules to change the URL settings.
-    drupal_alter('s3fs_url_settings', $url_settings, $s3_key);
+    backdrop_alter('s3fs_url_settings', $url_settings, $s3_key);
 
     // If a root folder has been set, and domain root is not set, prepend
     // the root folder to the $s3_key at this time.
@@ -461,8 +461,8 @@ class S3fsStreamWrapper implements DrupalStreamWrapperInterface {
   /**
    * Gets the path that the wrapper is responsible for.
    *
-   * This function isn't part of DrupalStreamWrapperInterface, but the rest
-   * of Drupal calls it as if it were, so we need to define it.
+   * This function isn't part of BackdropStreamWrapperInterface, but the rest
+   * of Backdrop calls it as if it were, so we need to define it.
    *
    * @return string
    *   The empty string. Since this is a remote stream wrapper,
@@ -475,8 +475,8 @@ class S3fsStreamWrapper implements DrupalStreamWrapperInterface {
   }
 
   /***************************************************************************
-              Public Functions for External Use of the Wrapper
-  ***************************************************************************/
+  Public Functions for External Use of the Wrapper
+   ***************************************************************************/
 
   /**
    * Wait for the specified file to exist in the bucket.
@@ -518,8 +518,8 @@ class S3fsStreamWrapper implements DrupalStreamWrapperInterface {
   }
 
   /***************************************************************************
-                      PHP Stream Wrapper Implementations
-  ***************************************************************************/
+  PHP Stream Wrapper Implementations
+   ***************************************************************************/
 
   /**
    * This wrapper doesn't support file permissions.
@@ -554,7 +554,7 @@ class S3fsStreamWrapper implements DrupalStreamWrapperInterface {
   /**
    * Gets the name of the parent directory of a given path.
    *
-   * This method is usually accessed through drupal_dirname(), which wraps
+   * This method is usually accessed through backdrop_dirname(), which wraps
    * around the normal PHP dirname() function, since it doesn't support stream
    * wrappers.
    *
@@ -564,7 +564,7 @@ class S3fsStreamWrapper implements DrupalStreamWrapperInterface {
    * @return string
    *   The directory name, or FALSE if not applicable.
    *
-   * @see drupal_dirname()
+   * @see backdrop_dirname()
    */
   public function dirname($uri = NULL) {
     $this->_debug("dirname($uri) called.");
@@ -791,7 +791,7 @@ class S3fsStreamWrapper implements DrupalStreamWrapperInterface {
     }
 
     // Allow other modules to alter the upload params.
-    drupal_alter('s3fs_upload_params', $upload_params);
+    backdrop_alter('s3fs_upload_params', $upload_params);
 
     try {
       $this->s3->putObject($upload_params);
@@ -944,7 +944,7 @@ class S3fsStreamWrapper implements DrupalStreamWrapperInterface {
     $this->_assert_constructor_called();
     $this->_debug("mkdir($uri, $mode, $options) called.");
 
-    // Some Drupal plugins call mkdir with a trailing slash. We mustn't store
+    // Some Backdrop plugins call mkdir with a trailing slash. We mustn't store
     // that slash in the cache.
     $uri = rtrim($uri, '/');
 
@@ -965,7 +965,7 @@ class S3fsStreamWrapper implements DrupalStreamWrapperInterface {
 
     // If the STREAM_MKDIR_RECURSIVE option was specified, also create all the
     // ancestor folders of this uri, except for the root directory.
-    $parent_dir = drupal_dirname($uri);
+    $parent_dir = backdrop_dirname($uri);
     if (($options & STREAM_MKDIR_RECURSIVE) && file_uri_target($parent_dir) != '') {
       return $this->mkdir($parent_dir, $mode, $options);
     }
@@ -1096,7 +1096,7 @@ class S3fsStreamWrapper implements DrupalStreamWrapperInterface {
 
     $this->dir = array();
     foreach ($child_uris as $child_uri) {
-      $this->dir[] = drupal_basename($child_uri);
+      $this->dir[] = backdrop_basename($child_uri);
     }
     return TRUE;
   }
@@ -1150,8 +1150,8 @@ class S3fsStreamWrapper implements DrupalStreamWrapperInterface {
   }
 
   /***************************************************************************
-                              Internal Functions
-  ***************************************************************************/
+  Internal Functions
+   ***************************************************************************/
 
   /**
    * Get the status of the file with the specified URI.
@@ -1313,7 +1313,7 @@ class S3fsStreamWrapper implements DrupalStreamWrapperInterface {
       ->fields($metadata)
       ->execute();
 
-    $dirname = drupal_dirname($metadata['uri']);
+    $dirname = backdrop_dirname($metadata['uri']);
     // If this file isn't in the root directory, also write this file's
     // ancestor folders to the cache.
     if (file_uri_target($dirname) != '') {

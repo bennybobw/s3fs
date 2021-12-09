@@ -1,15 +1,14 @@
-S3 File System (s3fs) provides an additional file system to your Drupal site,
+S3 File System (s3fs) provides an additional file system to your Backdrop site,
 alongside the public and private file systems, which stores files in Amazon's
 Simple Storage Service (S3) (or any S3-compatible storage service). You can set
 your site to use S3 File System as the default, or use it only for individual
 fields. This functionality is designed for sites which are load-balanced across
-multiple servers, as the mechanism used by Drupal's default file systems is not
+multiple servers, as the mechanism used by Backdrop's default file systems is not
 viable under such a configuration.
 
 =========================================
 == Dependencies and Other Requirements ==
 =========================================
-- Libraries API 2.x - https://drupal.org/project/libraries
 - AWS SDK for PHP 2.x - https://github.com/aws/aws-sdk-php/releases
 - PHP 5.3.3+ is required. The AWS SDK will not work on earlier versions.
 - Your PHP must be configured with "allow_url_fopen = On" in your php.ini file.
@@ -18,15 +17,13 @@ viable under such a configuration.
 ==================
 == Installation ==
 ==================
-1) Install Libraries version 2.x from http://drupal.org/project/libraries.
-
-2) Install the AWS SDK for PHP.
+1) Install the AWS SDK for PHP.
   a) If you have drush, you can install the SDK with this command (executed
-    from the root folder of your Drupal codebase):
+    from the root folder of your Backdrop codebase):
     drush make --no-core sites/all/modules/s3fs/s3fs.make
   b) If you don't have drush, download the SDK from here:
     https://github.com/aws/aws-sdk-php/releases/download/2.7.25/aws.zip
-    Extract that zip file into your Drupal codebase's
+    Extract that zip file into your Backdrop codebase's
     sites/all/libraries/awssdk2 folder such that the path to aws-autoloader.php
     is: sites/all/libraries/awssdk2/aws-autoloader.php
 
@@ -55,14 +52,14 @@ the "Configuring S3FS in settings.php" section below for more info.
 ===================== ESSENTIAL STEP! DO NOT SKIP THIS! ======================
 With the settings saved, go to /admin/config/media/s3fs/actions to refresh the
 file metadata cache. This will copy the filenames and attributes for every
-existing file in your S3 bucket into Drupal's database. This can take a
+existing file in your S3 bucket into Backdrop's database. This can take a
 significant amount of time for very large buckets (thousands of files). If this
 operation times out, you can also perform it using "drush s3fs-refresh-cache".
 
 Please keep in mind that any time the contents of your S3 bucket change without
-Drupal knowing about it (like if you copy some files into it manually using
+Backdrop knowing about it (like if you copy some files into it manually using
 another tool), you'll need to refresh the metadata cache again. S3FS assumes
-that its cache is a canonical listing of every file in the bucket. Thus, Drupal
+that its cache is a canonical listing of every file in the bucket. Thus, Backdrop
 will not be able to access any files you copied into your bucket manually until
 S3FS's cache learns of them. This is true of folders as well; s3fs will not be
 able to copy files into folders that it doesn't know about.
@@ -78,7 +75,7 @@ Add a field of type File, Image, etc. and set the "Upload destination" to
 
 This will configure your site to store new uploaded files in S3. Files which
 your site creates automatically (such as aggregated CSS) will still be stored
-in the server's local filesystem, because Drupal is hard-coded to use the
+in the server's local filesystem, because Backdrop is hard-coded to use the
 public:// filesystem for such files.
 
 However, s3fs can be configured to handle these files, as well. On the s3fs
@@ -87,7 +84,7 @@ public:// files" and/or "Use S3 for private:// files" options to make s3fs
 take over the job of the public and/or private file systems. This will cause
 your site to store newly uploaded/generated files from the public/private file
 system in S3 instead of the local file system. However, it will make any
-existing files in those file systems become invisible to Drupal. To remedy
+existing files in those file systems become invisible to Backdrop. To remedy
 this, you'll need to copy those files into your S3 bucket.
 
 You are strongly encouraged to use the drush command "drush s3fs-copy-local"
@@ -154,7 +151,7 @@ If you want your site's aggregated CSS and JS files to be stored on S3, rather
 than the default of storing them on the webserver's local filesystem, you'll
 need to do two things:
 1) Enable the "Use S3 for public:// files" option in the s3fs coniguration,
-   because Drupal always* puts aggregated CSS/JS into the public:// filesystem.
+   because Backdrop always* puts aggregated CSS/JS into the public:// filesystem.
 2) Because of the way browsers interpret relative URLs used in CSS files, and
    how they restrict requests made from external javascript files, you'll need
    to set up your webserver as a proxy for those files.
@@ -243,7 +240,7 @@ $conf['s3fs_ignore_cache'] = TRUE or FALSE;
 $conf['s3fs_use_s3_for_public'] = TRUE or FALSE;
 $conf['s3fs_no_rewrite_cssjs'] = TRUE or FALSE;
 $conf['s3fs_use_s3_for_private'] = TRUE or FALSE;
-$conf['s3fs_root_folder'] = 'drupal-root';
+$conf['s3fs_root_folder'] = 'Backdrop-root';
 $conf['s3fs_public_folder'] = 's3fs-public';
 $conf['s3fs_private_folder'] = 's3fs-private';
 $conf['s3fs_presigned_urls'] = "300|presigned-files/*\n60|other-presigned/*";
@@ -310,7 +307,7 @@ abandoned several years ago.
 == Acknowledgments ==
 =====================
 Special recognition goes to justafish, author of the AmazonS3 module:
-http://drupal.org/project/amazons3
+http://Backdrop.org/project/amazons3
 S3 File System started as a fork of her great module, but has evolved
 dramatically since then, becoming a very different beast. The main benefit of
 using S3 File System over AmazonS3 is performance, especially for image-

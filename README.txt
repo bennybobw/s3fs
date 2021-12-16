@@ -1,3 +1,5 @@
+Based on 7.x-2.x of the Drupal module.
+
 S3 File System (s3fs) provides an additional file system to your Backdrop site,
 alongside the public and private file systems, which stores files in Amazon's
 Simple Storage Service (S3) (or any S3-compatible storage service). You can set

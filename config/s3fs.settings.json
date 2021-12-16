@@ -1,0 +1,12 @@
+{
+    "_config_name": "s3fs.settings",
+    "s3fs_customhost": "unset",
+    "s3fs_cname": "unset",
+    "s3fs_allow_relative": "unset",
+    "s3fs_use_relative_urls": "unset",
+    "s3fs_use_instance_profile": "",
+    "s3fs_awssdk_use_instance_profile": "",
+    "s3fs_no_rewrite_cssjs": false,
+    "s3fs_file_uri_scheme_override": false,
+    "s3fs_bucket": ""
+}

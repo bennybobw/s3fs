@@ -13,10 +13,11 @@ use Aws\Sdk;
 /**
  * Class used to differentiate between known and unknown exception states.
  */
-class S3fsException extends Exception {}
+class S3fsException extends Exception { }
 
 /**
  * Implements hook_stream_wrappers().
+().
  *
  * Defines the s3:// stream wrapper.
  */
@@ -38,6 +39,7 @@ function s3fs_stream_wrappers() {
 
 /**
  * Implements hook_stream_wrappers_alter().
+().
  *
  * If configured to do so, s3fs takes control of the public:// stream wrapper.
  */
@@ -65,8 +67,9 @@ function s3fs_stream_wrappers_alter(&$wrappers) {
 
 /**
  * Implements hook_libraries_info().
+().
  */
-function s3fs_libraries_info() {
+/*function s3fs_libraries_info() {
   return array(
     'awssdk' => array(
       'title' => 'AWS SDK for PHP',
@@ -84,10 +87,11 @@ function s3fs_libraries_info() {
       ),
     ),
   );
-}
+}*/
 
 /**
  * Implements hook_menu().
+().
  */
 function s3fs_menu() {
   $items = array();
@@ -95,7 +99,7 @@ function s3fs_menu() {
   $items['admin/config/media/s3fs'] = array(
     'title' => 'S3 File System',
     'description' => 'Configure S3 File System.',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('s3fs_settings'),
     'access arguments' => array('administer s3fs'),
     'file' => 's3fs.admin.inc',
@@ -109,7 +113,7 @@ function s3fs_menu() {
   $items['admin/config/media/s3fs/actions'] = array(
     'title' => 'Actions',
     'description' => 'Actions for S3 File System.',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('s3fs_actions'),
     'access arguments' => array('administer s3fs'),
     'file' => 's3fs.admin.inc',
@@ -119,7 +123,7 @@ function s3fs_menu() {
   $items['admin/config/media/s3fs/actions/copy-images'] = array(
     'title' => 'Copy System Images to S3',
     'description' => 'Copy system image files from modules, themes, and libraries to S3.',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('s3fs_copy_system_images_confirm_form'),
     'access arguments' => array('administer s3fs'),
     'file' => 's3fs.admin.inc',
@@ -140,6 +144,7 @@ function s3fs_menu() {
 
 /**
  * Implements hook_permission().
+().
  */
 function s3fs_permission() {
   return array(
@@ -151,6 +156,7 @@ function s3fs_permission() {
 
 /**
  * Implements hook_help().
+().
  */
 function s3fs_help($path, $arg) {
   $actions = 'admin/config/media/s3fs/actions';
@@ -159,9 +165,9 @@ function s3fs_help($path, $arg) {
     $msg = t('To perform actions such as refreshing the metadata cache, visit the !link.<br>
       Disabled fields have been hard-coded in settings.php, and cannot be changed here. See the !README for details.',
       array(
-        '!link' => l(t('actions page'), $actions),
-        '!README' => l('README', drupal_get_path('module', 's3fs') . '/README.txt'),
-      )
+      '!link' => l(t('actions page'), $actions),
+      '!README' => l('README', backdrop_get_path('module', 's3fs') . '/README.txt'),
+    )
     );
     return "<p>$msg</p>";
   }
@@ -174,6 +180,7 @@ function s3fs_help($path, $arg) {
 
 /**
  * Implements hook_form_FORM_ID_alter().
+().
  *
  * Disables the "file system path" fields from the system module's
  * file_system_settings form when s3fs is taking them over. They do have an
@@ -210,8 +217,16 @@ function s3fs_form_system_file_system_settings_alter(&$form, &$form_state, $form
  * arguments: $style and $scheme, and any number of further arguments, which
  * represent the path to the file in S3 (split on the slashes).
  */
-function _s3fs_image_style_deliver() {
-  // Drupal's black magic calls this function with the image style as arg0,
+function _s3fs_image_style_deliver($style, $scheme)
+{
+  // Check that the style is defined and the scheme is valid.
+  if (!$style || !file_stream_wrapper_valid_scheme($scheme)) {
+    backdrop_add_http_header('Status', '400 Bad Request');
+    backdrop_add_http_header('Content-Type', 'text/html; charset=utf-8');
+    print t('Invalid request.');
+    backdrop_exit();
+  }
+  // Backdrop's black magic calls this function with the image style as arg0,
   // the scheme as arg1, and the full path to the filename split across arg2+.
   // So we need to use PHP's version of variatic functions to get the complete
   // filename.
@@ -220,13 +235,7 @@ function _s3fs_image_style_deliver() {
   $scheme = array_shift($args);
   $filename = implode('/', $args);
 
-  $valid = !empty($style) && file_stream_wrapper_valid_scheme($scheme);
-  if (!variable_get('image_allow_insecure_derivatives', FALSE) || strpos(ltrim($filename, '\/'), 'styles/') === 0) {
-    $valid = $valid && isset($_GET[IMAGE_DERIVATIVE_TOKEN]) && $_GET[IMAGE_DERIVATIVE_TOKEN] === image_style_path_token($style['name'], "$scheme://$filename");
-  }
-  if (!$valid) {
-    return MENU_ACCESS_DENIED;
-  }
+
 
   $image_uri = "$scheme://$filename";
   $derivative_uri = image_style_path($style['name'], $image_uri);
@@ -241,17 +250,17 @@ function _s3fs_image_style_deliver() {
 
   // Don't start generating the image if the derivative already exists or if
   // generation is in progress in another thread.
-  $lock_name = "_s3fs_image_style_deliver:{$style['name']}:" . drupal_hash_base64($image_uri);
+  $generation_lock_name = '_s3fs_image_style_deliver:' . $style['name'] . ':' . backdrop_hash_base64($image_uri);
   if (!file_exists($derivative_uri)) {
-    $lock_acquired = lock_acquire($lock_name);
-    if (!$lock_acquired) {
+    $generation_lock_acquired = lock_acquire($generation_lock_name);
+    if (!$generation_lock_acquired) {
       // Tell client to retry again in 3 seconds. Currently no browsers are known
       // to support Retry-After.
-      drupal_add_http_header('Status', '503 Service Unavailable');
-      drupal_add_http_header('Content-Type', 'text/html; charset=utf-8');
-      drupal_add_http_header('Retry-After', 3);
+      backdrop_add_http_header('Status', '503 Service Unavailable');
+      backdrop_add_http_header('Content-Type', 'text/html; charset=utf-8');
+      backdrop_add_http_header('Retry-After', 3);
       print t('Image generation in progress. Try again shortly.');
-      drupal_exit();
+      backdrop_exit();
     }
   }
 
@@ -266,27 +275,31 @@ function _s3fs_image_style_deliver() {
   }
 
   if (!empty($lock_acquired)) {
-    lock_release($lock_name);
+    lock_release($generation_lock_name);
   }
+
 
   if ($success) {
     if (_s3fs_get_setting('no_redirect_derivatives', False)) {
       // If the site admin doesn't want us to redirect to the new derivative, we upload it to the client, instead.
       $image = image_load($derivative_uri);
-      $settings = array('Content-Type' => $image->info['mime_type'], 'Content-Length' => $image->info['file_size']);
+      $settings = array(
+        'Content-Type' => $image->info['mime_type'],
+        'Content-Length' => $image->info['file_size'],
+      );
       file_transfer($image->source, $settings);
     }
     else {
       // Perform a 302 Redirect to the new image derivative in S3.
-      drupal_goto(file_create_url($derivative_uri));
+      backdrop_goto(file_create_url($derivative_uri));
     }
   }
   else {
     watchdog('S3 File System', 'Unable to generate an image derivative at %path.', array('%path' => $derivative_uri));
-    drupal_add_http_header('Status', '500 Internal Server Error');
-    drupal_add_http_header('Content-Type', 'text/html; charset=utf-8');
+    backdrop_add_http_header('Status', '500 Internal Server Error');
+    backdrop_add_http_header('Content-Type', 'text/html; charset=utf-8');
     print t('Error generating image.');
-    drupal_exit();
+    backdrop_exit();
   }
 }
 
@@ -343,7 +356,10 @@ function _s3fs_validate_config($config) {
 
   // Test the connection to S3, and the bucket name.
   try {
-    $list_obj_args = array('Bucket' => $config['bucket'], 'MaxKeys' => 1);
+    $list_obj_args = array(
+      'Bucket' => $config['bucket'],
+      'MaxKeys' => 1,
+    );
     if (!empty($config['root_folder'])) {
       // If the root_folder option has been set, retrieve from S3 only those files
       // which reside in the root folder.
@@ -559,7 +575,7 @@ function _s3fs_refresh_cache($config) {
     drush_log(dt('S3 File System cache refreshed.'));
   }
   else {
-    drupal_set_message(t('S3 File System cache refreshed.'));
+    backdrop_set_message(t('S3 File System cache refreshed.'));
   }
 }
 
@@ -579,7 +595,7 @@ function _s3fs_write_metadata(&$file_metadata_list, &$folders) {
       ->fields(array('uri', 'filesize', 'timestamp', 'dir', 'version'));
 
     foreach ($file_metadata_list as $key => $metadata) {
-      $uri = drupal_dirname($metadata['uri']);
+      $uri = backdrop_dirname($metadata['uri']);
 
       // Write the file metadata to the DB.
       if (!$metadata['dir']) {
@@ -596,7 +612,7 @@ function _s3fs_write_metadata(&$file_metadata_list, &$folders) {
       // Loop through each ancestor folder until we get to the root uri.
       while ($uri != $root) {
         $folders[rtrim($uri, '/')] = TRUE;
-        $uri = drupal_dirname($uri);
+        $uri = backdrop_dirname($uri);
       }
     }
     $insert_query->execute();
@@ -723,21 +739,12 @@ function _s3fs_get_amazons3_client($config) {
     }
 
     // Check if AWS SDK is loaded and accessible.
-    $sdk_loaded = FALSE;
-    if (module_exists('composer_manager')) {
-      $sdk_loaded = class_exists('Aws\Sdk');
-    }
-    elseif (module_exists('libraries')) {
-      $library = _s3fs_load_awssdk_library();
-      $sdk_loaded = $library['loaded'];
-    }
-
-    if (!$sdk_loaded) {
+    $library = _s3fs_load_awssdk_library();
+    if (!$library['loaded']) {
       throw new S3fsException(
-        t('Unable to load the AWS SDK. Please ensure that the AWS SDK library is installed correctly.')
+        t('Unable to load the AWS SDK. Please ensure that the awssdk2 library is installed correctly.')
       );
-    }
-    elseif (!class_exists('Aws\S3\S3Client')) {
+    }elseif (!class_exists('Aws\S3\S3Client')) {
       throw new S3fsException(
         t('Cannot load Aws\S3\S3Client class. Please ensure that the AWS SDK library is installed correctly.')
       );
@@ -766,7 +773,7 @@ function _s3fs_get_amazons3_client($config) {
     // Use defined keys.
     elseif (!empty($access_key) && !empty($secret_key)) {
       $client_config['credentials'] = array(
-        'key'    => $access_key,
+        'key' => $access_key,
         'secret' => $secret_key,
       );
     }
@@ -807,7 +814,7 @@ function _s3fs_get_amazons3_client($config) {
  *   with their prefix left intact.
  */
 function _s3fs_get_config($reset = FALSE) {
-  $config = &drupal_static('_s3fs_get_config');
+  $config = &backdrop_static('_s3fs_get_config');
   if ($config === NULL || $reset) {
     // The global $conf array contains all the variables, including overrides
     // from settings.php.
@@ -879,33 +886,25 @@ function _s3fs_get_setting($setting, $default = '') {
  * @return array
  *   The array returned by libraries_load('awssdk'), as if it used no cache.
  */
-function _s3fs_load_awssdk_library() {
-  // Start by calling libraries_load().
-  $library = libraries_load('awssdk');
-  // If it detects and loads the library, great! We're done.
-  if (!empty($library['loaded'])) {
-    return $library;
-  }
-  // Otherwise, clear the awssdk value from the Libraries cache, erase the
-  // static data for libraries_load(), then call it again to get the real
-  // state of the library.
-  cache_clear_all('awssdk', 'cache_libraries');
-  drupal_static_reset('libraries_load');
-  return libraries_load('awssdk');
+function _s3fs_load_awssdk_library()
+{
+  $loaded = include_once(backdrop_get_path('module', 's3fs') . '/libraries/awssdk/aws-autoloader.php');
+  return array('loaded' => $loaded);
 }
 
-/**
+  /**
  * Copies all the local files from the specified file system into S3.
  */
 function _s3fs_copy_file_system_to_s3($scheme) {
+  $config = config('s3fs.settings');
   if ($scheme == 'public') {
-    $source_folder = realpath(variable_get('file_public_path', conf_path() . '/files'));
+    $source_folder = realpath(config_get('system.performance', 'file_public_path'));
   }
   elseif ($scheme == 'private') {
-    $source_folder = variable_get('file_private_path', '');
+    $source_folder = config_get('system.performance', 'file_private_path');
     $source_folder_real = realpath($source_folder);
     if (empty($source_folder) || empty($source_folder_real)) {
-      drupal_set_message('Private file system base path is unknown. Unable to perform S3 copy.', 'error');
+      backdrop_set_message('Private file system base path is unknown. Unable to perform S3 copy.', 'error');
       return;
     }
   }
@@ -919,7 +918,7 @@ function _s3fs_copy_file_system_to_s3($scheme) {
     copy($path, "$scheme://$relative_path");
   }
 
-  drupal_set_message(t('Copied all local %scheme files to S3.', array('%scheme' => $scheme)), 'status');
+  backdrop_set_message(t('Copied all local %scheme files to S3.', array('%scheme' => $scheme)), 'status');
 }
 
 function _s3fs_recursive_dir_scan($dir) {
@@ -932,7 +931,7 @@ function _s3fs_recursive_dir_scan($dir) {
       // In case they put their private root folder inside their public one,
       // skip it. When listing the private file system contents, $path will
       // never trigger this.
-      if ($path == realpath(variable_get('file_private_path'))) {
+      if ($path == realpath(config_get('system.performance', 'file_private_path'))) {
         continue;
       }
 
@@ -950,13 +949,29 @@ function _s3fs_recursive_dir_scan($dir) {
 /*
  * Confirmation form displaying system images to be deleted from S3 if the process is continued.
  */
+/**
+ * Implements hook_config_info().
+ */
+function s3fs_config_info() {
+  $prefixes['s3fs.settings'] = array(
+    'label' => t('S3 File System settings'),
+    'group' => t('Configuration'),
+  );
+  return $prefixes;
+}
+
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function s3fs_copy_system_images_confirm_form($form, &$form_state) {
-  if (!variable_get('s3fs_no_rewrite_cssjs', FALSE)) {
-    drupal_goto('admin/config/media/s3fs/actions');
+  $config = config('s3fs.settings');
+  if (!$config->get('s3fs_no_rewrite_cssjs')) {
+    backdrop_goto('admin/config/media/s3fs/actions');
   }
 
   // Active stream wrapper.
-  $wrapper = variable_get('file_default_scheme', 'public') . '://';
+  $wrapper = config_get('system.performance', 'file_default_scheme') . '://';
   $directories = s3fs_copy_system_images_directories();
 
   if (!empty($directories['root_dirs'])) {
@@ -1002,12 +1017,16 @@ function s3fs_copy_system_images_confirm_form($form, &$form_state) {
 /*
  * Form submit to remove previously saved system images from S3 and copy new ones.
  */
+/**
+ * @todo Please document this function.
+ * @see http://drupal.org/node/1354
+ */
 function s3fs_copy_system_images_confirm_form_submit($form, &$form_state) {
   $wrapper = $form_state['build_info']['system_stream_wrapper'];
   $directories = $form_state['build_info']['system_image_directories'];
   s3fs_copy_system_images_batch_set($wrapper, $directories);
 
-  drupal_set_message(t('Copying of system images from modules, themes, and libraries to S3 is complete.'));
+  backdrop_set_message(t('Copying of system images from modules, themes, and libraries to S3 is complete.'));
   $form_state['redirect'] = array('path' => 'admin/config/media/s3fs/actions');
 }
 
@@ -1049,7 +1068,7 @@ function s3fs_copy_system_images_batch_set($wrapper, $directories) {
  *   each directory, and an overall total of files to be copied.
  */
 function s3fs_copy_system_images_directories() {
-  // Add Drupal's default misc and modules directories.
+  // Add Backdrop's default misc and modules directories.
   $dirs = array('misc', 'modules');
   // Add directories of current libraries.
   foreach (libraries_get_libraries() as $library_name => $library_path) {
@@ -1057,11 +1076,11 @@ function s3fs_copy_system_images_directories() {
   }
   // Add directories of enabled modules.
   foreach (module_list() as $module_name => $module) {
-    $dirs[] = drupal_get_path('module', $module_name);
+    $dirs[] = backdrop_get_path('module', $module_name);
   }
   // Add directories of available themes.
   foreach (list_themes() as $theme_name => $theme) {
-    $dirs[] = drupal_get_path('theme', $theme_name);
+    $dirs[] = backdrop_get_path('theme', $theme_name);
   }
   // Remove duplicate directories.
   $dirs = array_values(array_unique($dirs));
@@ -1128,7 +1147,7 @@ function s3fs_copy_system_images_save_batch($wrapper, $directory) {
     $remote_file_path = str_replace('/' . $local_file->filename, '', $local_file_uri);
     // Use file path to make directories. Only create if it doesn't exist.
     if (!is_dir($wrapper . $remote_file_path)) {
-      drupal_mkdir($wrapper . $remote_file_path, NULL, TRUE, NULL);
+      backdrop_mkdir($wrapper . $remote_file_path, NULL, TRUE, NULL);
     }
     // Copy file from the original file path to its location in the stream wrapper.
     file_unmanaged_copy($local_file_uri, $wrapper . $local_file_uri, FILE_EXISTS_REPLACE);
@@ -1137,21 +1156,32 @@ function s3fs_copy_system_images_save_batch($wrapper, $directory) {
 
 /**
  * Implements hook_field_default_field_bases_alter().
+().
  *
  * Allows a variable to override all exported field bases to use 'Amazon S3' as
  * the Upload destination. For example this can be added to environment-specific
- * Drupal settings files, to allow certain environments to upload to S3 while
+ * Backdrop settings files, to allow certain environments to upload to S3 while
  * other environments upload to the exported (public or private) URI scheme:
  * @code
  * $conf['s3fs_file_uri_scheme_override'] = 's3';
  * @endcode
  */
 function s3fs_field_default_field_bases_alter(&$fields) {
-  if ($uri_scheme = variable_get('s3fs_file_uri_scheme_override', FALSE)) {
+  if ($uri_scheme = config_get('s3fs.settings', 's3fs_file_uri_scheme_override')) {
     foreach ($fields as $key => $item) {
       if (isset($item['settings']['uri_scheme'])) {
         $fields[$key]['settings']['uri_scheme'] = $uri_scheme;
       }
     }
   }
+}
+
+/**
+ * Implements hook_autoload_info().
+ */
+function s3fs_autoload_info() {
+  return array(
+    'S3fsStreamWrapper' => 'S3fsStreamWrapper.inc',
+    'S3fsException' => 's3fs.module',
+  );
 }

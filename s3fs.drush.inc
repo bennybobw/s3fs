@@ -7,18 +7,19 @@
 
 /**
  * Implements hook_drush_command().
+().
  */
 function s3fs_drush_command() {
   $items = array();
   $items['s3fs-refresh-cache'] = array(
     'description' => dt('Refresh the S3 File System metadata cache.'),
-    'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_FULL,
+    'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
     'aliases' => array('s3fs-rc'),
     'callback' => 'drush_s3fs_refresh_cache',
   );
   $items['s3fs-copy-local'] = array(
     'description' => dt('Copy local files from your public and/or private file system(s) into your S3 bucket, if s3fs is configured to take them over.'),
-    'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_FULL,
+    'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
     'aliases' => array('s3fs-cl'),
     'callback' => 'drush_s3fs_copy_local',
   );
@@ -31,7 +32,7 @@ function s3fs_drush_command() {
 function drush_s3fs_refresh_cache() {
   $config = _s3fs_get_config();
   if (!_s3fs_validate_config($config)) {
-    drupal_set_message(
+    backdrop_set_message(
       dt('Unable to validate your s3fs configuration settings. Please configure S3 File System from the admin/config/media/s3fs page and try again.'),
       'error'
     );
@@ -47,14 +48,14 @@ function drush_s3fs_refresh_cache() {
 function drush_s3fs_copy_local() {
   $config = _s3fs_get_config();
   if (!_s3fs_validate_config($config)) {
-    drupal_set_message(
+    backdrop_set_message(
       dt('Unable to validate your s3fs configuration settings. Please configure S3 File System from the admin/config/media/s3fs page and try again.'),
       'error'
     );
     return;
   }
   if (empty($config['use_s3_for_public']) && empty($config['use_s3_for_private'])) {
-    drupal_set_message(
+    backdrop_set_message(
       dt('S3 File System is not configured to take over any other file systems.')
     );
     return;

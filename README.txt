@@ -1,3 +1,5 @@
+Based on 7.x-3.x version of Drupal module.
+
 S3 File System (s3fs) provides an additional file system to your Drupal site,
 alongside the public and private file systems, which stores files in Amazon's
 Simple Storage Service (S3) (or any S3-compatible storage service). You can set

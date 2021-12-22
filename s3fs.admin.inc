@@ -7,8 +7,9 @@ use Aws\Api;
 /**
  * Builds the Settings form.
  */
-function s3fs_settings() {
-  $form = array();
+function s3fs_settings($form, &$form_state) {
+  $config = config('s3fs.settings');
+  $form['#config'] = 's3fs.settings';
   // @todo Read endpoints from (composer_manager_vendor_dir() . 'aws/aws-sdk-php/src/data/endpoints.json')
   $region_map = array(
     '' => t('Default'),
@@ -52,7 +53,7 @@ function s3fs_settings() {
     ),
     '#collapsible' => TRUE,
     // Simplify the form by collapsing this fieldset if it's already been configured.
-    '#collapsed'   => _s3fs_get_setting('awssdk_access_key') || _s3fs_get_setting('use_instance_profile'),
+    '#collapsed'   => $config->get('awssdk_access_key') || $config->get('use_instance_profile'),
   );
   # NOTE: The awssdk settings can be a bit confusing. They start with "s3fs_"
   # to ensure that they get pulled as part of _s3fs_get_config(), but they can
@@ -60,17 +61,17 @@ function s3fs_settings() {
   $form['aws_credentials']['s3fs_awssdk_access_key'] = array(
     '#type'          => 'textfield',
     '#title'         => t('Amazon Web Services Access Key'),
-    '#default_value' => _s3fs_get_setting('awssdk_access_key'),
+    '#default_value' => $config->get('s3fs_awssdk_access_key'),
   );
   $form['aws_credentials']['s3fs_awssdk_secret_key'] = array(
     '#type'          => 'textfield',
     '#title'         => t('Amazon Web Services Secret Key'),
-    '#default_value' => _s3fs_get_setting('awssdk_secret_key'),
+    '#default_value' => $config->get('s3fs_awssdk_secret_key'),
   );
   $form['aws_credentials']['s3fs_use_instance_profile'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Use EC2 Instance Profile Credentials'),
-    '#default_value' => _s3fs_get_setting('use_instance_profile'),
+    '#default_value' => $config->get('use_instance_profile'),
     '#description'   => t(
       'If your Drupal site is running on an Amazon EC2 server, you may use the Instance Profile Credentials
       from that server rather than setting your AWS credentials directly.'
@@ -79,7 +80,7 @@ function s3fs_settings() {
   $form['aws_credentials']['s3fs_credentials_file'] = array(
     '#type'          => 'textfield',
     '#title'         => t('Custom Credentials File Location'),
-    '#default_value' => _s3fs_get_setting('credentials_file'),
+    '#default_value' => $config->get('credentials_file'),
     '#description'   => t('The custom profile or ini file location. This will use the ini provider instead.'),
     '#states'        => array(
       'visible' => array(
@@ -95,7 +96,7 @@ function s3fs_settings() {
   $form['s3fs_bucket'] = array(
     '#type' => 'textfield',
     '#title' => t('S3 Bucket Name'),
-    '#default_value' => _s3fs_get_setting( 'bucket'),
+    '#default_value' => $config->get( 's3fs_bucket'),
     '#required' => TRUE,
   );
 
@@ -103,7 +104,7 @@ function s3fs_settings() {
     '#type' => 'select',
     '#options' => $region_map,
     '#title' => t('S3 Region'),
-    '#default_value' => _s3fs_get_setting('region'),
+    '#default_value' => $config->get('s3fs_region'),
     '#description' => t(
       'The region in which your bucket resides. Be careful to specify this accurately,
       as you are likely to see strange or broken behavior if the region is set wrong.<br>
@@ -130,7 +131,7 @@ function s3fs_settings() {
   $form['advanced']['s3fs_use_cname'] = array(
     '#type' => 'checkbox',
     '#title' => t('Use a CNAME'),
-    '#default_value' => _s3fs_get_setting('use_cname'),
+    '#default_value' => $config->get('use_cname'),
     '#description' => t('Serve files from a custom domain, instead of "BUCKET_NAME.s3.REGION.amazonaws.com".'),
   );
 
@@ -145,7 +146,7 @@ function s3fs_settings() {
     's3fs_domain' => array(
       '#type' => 'textfield',
       '#title' => t('Domain Name'),
-      '#default_value' => _s3fs_get_setting('domain'),
+      '#default_value' => $config->get('domain'),
       '#description' => t("The domain name from which you want your files to be served. " .
         "You will need to configure a DNS CNAME that maps from this domain to your bucket's URL."
       ),
@@ -159,7 +160,7 @@ function s3fs_settings() {
         'public' => t('Public folder (mybucket/s3fs-public)'),
         'root_public' => t('Root & Public folders (mybucket/root/s3fs-public)'),
       ),
-      '#default_value' => _s3fs_get_setting('domain_root'),
+      '#default_value' => $config->get('domain_root'),
       '#description' => t("Map the domain name to the location from where the file should be pulled. " .
         "This is useful when using a service such as Cloudfront where the origin path can be a specific " .
         "folder in a bucket, rather than the entire bucket. For example, with a root folder of \"staging\" and " .
@@ -171,7 +172,7 @@ function s3fs_settings() {
     's3fs_domain_s3_private' => array(
       '#type' => 'checkbox',
       '#title' => t('Remove access to files via S3 URL'),
-      '#default_value' => _s3fs_get_setting('domain_s3_private'),
+      '#default_value' => $config->get('domain_s3_private'),
       '#description' => t("If using a domain name to serve files, there is usually no need to provide " .
         "access to the URLs shown on S3 objects. This can also be a cost concern, since accessing files from S3 " .
         "is more expensive than edge services such as Cloudfront. Select this checkbox to remove access to files " .
@@ -184,7 +185,7 @@ function s3fs_settings() {
   $form['advanced']['s3fs_use_customhost'] = array(
     '#type' => 'checkbox',
     '#title' => t('Use a Custom Host'),
-    '#default_value' => _s3fs_get_setting('use_customhost'),
+    '#default_value' => $config->get('use_customhost'),
     '#description' => t('Connect to an S3-compatible storage service other than Amazon.'),
   );
 
@@ -199,7 +200,7 @@ function s3fs_settings() {
     's3fs_hostname' => array(
       '#type' => 'textfield',
       '#title' => t('Hostname'),
-      '#default_value' => _s3fs_get_setting('hostname'),
+      '#default_value' => $config->get('hostname'),
       '#description' => t('Custom service hostname, e.g. "objects.dreamhost.com".'),
       '#states' => array(
         'visible' => array(
@@ -212,7 +213,7 @@ function s3fs_settings() {
   $form['advanced']['s3fs_no_redirect_derivatives'] = array(
     '#type' => 'checkbox',
     '#title' => t("Don't redirect to derivatives"),
-    '#default_value' => _s3fs_get_setting('no_redirect_derivatives'),
+    '#default_value' => $config->get('no_redirect_derivatives'),
     '#description' => t(
       'Normally, when a new image derivative is created, S3FS will redirect the client to its URL in S3.
       This may be undersirable for sites which use a CDN, so this checkbox was added to make S3FS upload
@@ -224,7 +225,7 @@ function s3fs_settings() {
   $form['advanced']['s3fs_use_versioning'] = array(
     '#type' => 'checkbox',
     '#title' => t('Use Bucket Versioning'),
-    '#default_value' => _s3fs_get_setting('use_versioning'),
+    '#default_value' => $config->get('use_versioning'),
     '#description' => t(
       'If your Bucket has Versioning enabled and you would like to store the version metadata
         in the s3fs_file table'
@@ -234,7 +235,7 @@ function s3fs_settings() {
   $form['advanced']['s3fs_cache_control_header'] = array(
     '#type' => 'textfield',
     '#title' => t('S3 Object Cache-Control Header'),
-    '#default_value' => _s3fs_get_setting('cache_control_header'),
+    '#default_value' => $config->get('cache_control_header'),
     '#description' => t('The cache control header to apply on all S3 objects (for use by CDNs and browsers), e.g.
       "public, max-age=300".'
     ),
@@ -248,7 +249,7 @@ function s3fs_settings() {
       'aws:kms' => 'aws:kms',
     ),
     '#title' => t('Server-Side Encryption'),
-    '#default_value' => _s3fs_get_setting('encryption'),
+    '#default_value' => $config->get('encryption'),
     '#description' => t(
       'If your bucket requires !ENCRYPTION, you can specify the encryption algorithm here',
       array(
@@ -262,7 +263,7 @@ function s3fs_settings() {
   $form['advanced']['s3fs_use_https'] = array(
     '#type' => 'checkbox',
     '#title' => t('Always serve files from S3 via HTTPS'),
-    '#default_value' => _s3fs_get_setting('use_https'),
+    '#default_value' => $config->get('use_https'),
     '#description' => t(
       'Forces S3 File System to always generate HTTPS URLs for files in your bucket,
       e.g. "https://mybucket.s3.amazonaws.com/smiley.jpg".<br>
@@ -273,7 +274,7 @@ function s3fs_settings() {
   $form['advanced']['s3fs_ignore_cache'] = array(
     '#type' => 'checkbox',
     '#title' => t('Ignore the file metadata cache'),
-    '#default_value' => _s3fs_get_setting('ignore_cache'),
+    '#default_value' => $config->get('ignore_cache'),
     '#description' => t(
       "If you need to debug a problem with S3, you may want to temporarily ignore the file metadata cache.
       This will make all file system reads hit S3 instead of the cache.<br>
@@ -284,7 +285,7 @@ function s3fs_settings() {
   $form['advanced']['s3fs_use_s3_for_public'] = array(
     '#type' => 'checkbox',
     '#title' => t('Use S3 for public:// files'),
-    '#default_value' => _s3fs_get_setting('use_s3_for_public'),
+    '#default_value' => $config->get('use_s3_for_public'),
     '#description' => t(
       "Enable this option to store all files which would be uploaded to or created in the web server's local file
       system within your S3 bucket instead.<br><br>
@@ -299,7 +300,7 @@ function s3fs_settings() {
   $form['advanced']['s3fs_no_rewrite_cssjs'] = array(
     '#type' => 'checkbox',
     '#title' => t("Don't render proxied CSS/JS file paths"),
-    '#default_value' => _s3fs_get_setting('no_rewrite_cssjs'),
+    '#default_value' => $config->get('no_rewrite_cssjs'),
     '#description' => t(
       "Normally, S3FS renders the URLs of public:// CSS and JS files to make use of the proxy settings that are
         assumed to be configured in your webserver based on the README. However, if you don't want it to do that, you
@@ -319,7 +320,7 @@ function s3fs_settings() {
   $form['advanced']['s3fs_use_s3_for_private'] = array(
     '#type' => 'checkbox',
     '#title' => t('Use S3 for private:// files'),
-    '#default_value' => _s3fs_get_setting('use_s3_for_private'),
+    '#default_value' => $config->get('use_s3_for_private'),
     '#description' => t(
       'Enable this option to store all files which would be uploaded to or created in the private://
       file system (files available only to authenticated users) within your S3 bucket instead.'
@@ -329,7 +330,7 @@ function s3fs_settings() {
   $form['advanced']['s3fs_root_folder'] = array(
     '#type' => 'textfield',
     '#title' => t('Root Folder'),
-    '#default_value' => _s3fs_get_setting('root_folder'),
+    '#default_value' => $config->get('root_folder'),
     '#description' => t(
       'S3 File System uses the specified folder as the root of the file system within your bucket (if blank, the bucket
       root is used). This is helpful when your bucket is used by multiple sites, or has additional data in it which
@@ -355,7 +356,7 @@ function s3fs_settings() {
   $form['advanced']['additional_folders']['s3fs_public_folder'] = array(
     '#type' => 'textfield',
     '#title' => t('Public Folder'),
-    '#default_value' => _s3fs_get_setting('public_folder', 's3fs-public'),
+    '#default_value' => $config->get('public_folder', 's3fs-public'),
     '#description' => t(
       'The name of the folder in your bucket (or within the root folder) where public:// files will be stored.'
     ),
@@ -364,7 +365,7 @@ function s3fs_settings() {
   $form['advanced']['additional_folders']['s3fs_private_folder'] = array(
     '#type' => 'textfield',
     '#title' => t('Private Folder'),
-    '#default_value' => _s3fs_get_setting('private_folder', 's3fs-private'),
+    '#default_value' => $config->get('private_folder', 's3fs-private'),
     '#description' => t(
       'The name of the folder in your bucket (or within the root folder) where private:// files will be stored.'
     ),
@@ -383,7 +384,7 @@ function s3fs_settings() {
   $form['advanced']['file_specific']['s3fs_presigned_urls'] = array(
     '#type' => 'textarea',
     '#title' => t('Presigned URLs'),
-    '#default_value' => _s3fs_get_setting('presigned_urls'),
+    '#default_value' => $config->get('presigned_urls'),
     '#rows' => 5,
     '#description' => t(
       'A list of timeouts and paths that should be delivered through a presigned url.<br>
@@ -397,7 +398,7 @@ function s3fs_settings() {
   $form['advanced']['file_specific']['s3fs_saveas'] = array(
     '#type' => 'textarea',
     '#title' => t('Force Save As'),
-    '#default_value' => _s3fs_get_setting('saveas'),
+    '#default_value' => $config->get('saveas'),
     '#rows' => 5,
     '#description' => t(
       'A list of paths for which users will be forced to save the file, rather than displaying it in the browser.<br>
@@ -410,7 +411,7 @@ function s3fs_settings() {
   $form['advanced']['file_specific']['s3fs_torrents'] = array(
     '#type' => 'textarea',
     '#title' => t('Torrents'),
-    '#default_value' => _s3fs_get_setting('torrents'),
+    '#default_value' => $config->get('torrents'),
     '#rows' => 5,
     '#description' => t(
       'A list of paths that should be delivered via BitTorrent.<br>
@@ -427,17 +428,17 @@ function s3fs_settings() {
 /**
  * Validates the values on the admin form.
  */
-function s3fs_settings_validate($form, &$form_state) {
+/*function s3fs_settings_validate($form, &$form_state) {
   $config_from_form = _s3fs_convert_form_state_to_config($form_state);
   // Get all the saved settings from s3fs_get_config(), then override them with the config from the form.
   $config = array_merge(_s3fs_get_config(), $config_from_form);
   _s3fs_validate_config($config);
-}
+}*/
 
 /**
  * Converts a $form_state array to a configuration settings array.
  */
-function _s3fs_convert_form_state_to_config($form_state) {
+/*function _s3fs_convert_form_state_to_config($form_state) {
   $config = array();
   foreach ($form_state['values'] as $name => $value) {
     // If the name starts with 's3fs_', strip that off and save the value.
@@ -446,7 +447,7 @@ function _s3fs_convert_form_state_to_config($form_state) {
     }
   }
   return $config;
-}
+}*/
 
 /**
  * Builds the Actions form.
@@ -546,7 +547,7 @@ function s3fs_actions() {
     );
   }
 
-  return $form;
+  return system_settings_form($form);
 }
 
 /**
@@ -573,7 +574,7 @@ function _s3fs_copy_system_images_submit($form, &$form_state)
 /**
  * Saves configuration settings when the form is submitted.
  */
-function s3fs_settings_form_submit($form, &$form_state) {
+/*function s3fs_settings_form_submit($form, &$form_state) {
   $config = config('s3fs.settings');
 
   $config->set('s3fs_customhost', $form_state['values']['s3fs_customhost']);
@@ -617,4 +618,4 @@ function s3fs_settings_form_submit($form, &$form_state) {
 
   $config->save();
   backdrop_set_message(t('The configuration options have been saved.'));
-}
+}*/

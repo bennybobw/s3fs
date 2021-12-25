@@ -1,51 +1,21 @@
-Based on 7.x-3.x version of Drupal module.
+S3 File System
+======================
 
-S3 File System (s3fs) provides an additional file system to your Drupal site,
+S3 File System (s3fs) provides an additional file system to your Backdrop site,
 alongside the public and private file systems, which stores files in Amazon's
 Simple Storage Service (S3) (or any S3-compatible storage service). You can set
 your site to use S3 File System as the default, or use it only for individual
 fields. This functionality is designed for sites which are load-balanced across
-multiple servers, as the mechanism used by Drupal's default file systems is not
+multiple servers, as the mechanism used by Backdrop's default file systems is not
 viable under such a configuration.
 
-=========================================
-== Dependencies and Other Requirements ==
-=========================================
-- Either the Composer Manager or Libraries module is required to manage
-  the AWS SDK. Download and install one of these two options:
-  - Composer Manager 1.x - https://drupal.org/project/composer_manager
-  - Libraries API 2.x - https://drupal.org/project/libraries
-- Note: if both Composer Manager and Libraries are installed, the s3fs module
-  will use Composer Manager.
-- AWS SDK for PHP 3.x - https://github.com/aws/aws-sdk-php/releases
-- PHP 5.5+ is required. AWS SDK v3 will not work on earlier versions.
-- Your PHP must be configured with "allow_url_fopen = On" in your php.ini file.
-  Otherwise, PHP will be unable to open files that are in your S3 bucket.
-- PHP must also have the SimpleXML extension enabled.
-- See this page for additional recommendations:
-  https://docs.aws.amazon.com/sdk-for-php/v3/developer-guide/getting-started_requirements.html
+Installation
+------------
+Install this module using the official Backdrop CMS instructions at https://docs.backdropcms.org/documentation/extend-with-modules.
 
-==================
-== Installation ==
-==================
-FOR COMPOSER MANAGER MODULE:
-1) Install composer manager and follow its instructions for installing the AWS
-SDK PHP library. The composer.json file included with this module will set the
-version to the latest 3.x.
-
-FOR LIBRARIES MODULE:
-1) Install Libraries version 2.x from http://drupal.org/project/libraries.
-
-2) Install the AWS SDK for PHP.
-  a) If you have drush, you can install the SDK with this command (executed
-     from the root folder of your Drupal codebase):
-     drush make --no-core sites/all/modules/s3fs/s3fs.make
-  b) If you don't have drush, download the latest Version 3 aws.zip file
-     from here:
-     https://github.com/aws/aws-sdk-php/releases/latest/download/aws.zip
-     Extract the zip file into your Drupal Libraries folder for AWS SDK
-     (sites/all/libraries/awssdk) such that the path to aws-autoloader.php
-     is: "sites/all/libraries/awssdk/aws-autoloader.php"
+Visit the configuration page under Administration > Configuration > Media > s3fs (admin/config/media/s3fs) and enter
+the
+required information.
 
 IN CASE OF TROUBLE DETECTING THE AWS SDK LIBRARY:
 Ensure that the awssdk folder itself, and all the files within it, can be read
@@ -53,28 +23,19 @@ by your webserver. Usually this means that the user "apache" (or "_www" on OSX)
 must have read permissions for the files, and read+execute permissions for all
 the folders in the path leading to the awssdk files.
 
-====================
-== Initial Setup ==
-====================
-With the code installation complete, you must now configure s3fs to use your
-Amazon Web Services credentials.
+Initial Setup
+------------
+With the code installation complete, you must now configure s3fs to use your Amazon Web Services credentials.
 
 The preferred method is to use environment variables or IAM credentials as
 outlined here: https://docs.aws.amazon.com/aws-sdk-php/v3/guide/guide/credentials.html
-
-However, you can also set the credentials in the $conf array in
-your site's settings.php file (sites/default/settings.php), like so:
-$conf['awssdk_access_key'] = 'YOUR ACCESS KEY';
-$conf['awssdk_secret_key'] = 'YOUR SECRET KEY';
 
 Configure your settings for S3 File System (including your S3 bucket name) at
 /admin/config/media/s3fs/settings. You can input your AWS credentials on this
 page as well, but using the $conf array is recommended.
 
-You can also configure the rest of your S3 preferences in the $conf array. See
-the "Configuring S3FS in settings.php" section below for more info.
-
-===================== ESSENTIAL STEP! DO NOT SKIP THIS! ======================
+Essential Step! Do not skip this!
+------------
 With the settings saved, go to /admin/config/media/s3fs/actions to refresh the
 file metadata cache. This will copy the filenames and attributes for every
 existing file in your S3 bucket into Drupal's database. This can take a
@@ -89,9 +50,9 @@ will not be able to access any files you copied into your bucket manually until
 S3FS's cache learns of them. This is true of folders as well; s3fs will not be
 able to copy files into folders that it doesn't know about.
 
-============================================
-== How to Configure Your Site to Use s3fs ==
-============================================
+How to Configure your site to use s3fs
+------------
+
 Visit the admin/config/media/file-system page and set the "Default download
 method" to "Amazon Simple Storage Service"
 -and/or-
@@ -136,9 +97,9 @@ location ~ (^/s3/files/styles/|^/sites/.*/files/imagecache/|^/sites/default/them
   try_files $uri @rewrite;
 }
 
-========================
-== AWS Permissions ==
-========================
+AWS Permissions
+------------
+
 For s3fs to be able to function, the AWS user identified by the configured
 credentials should have the following User Policy set:
 
@@ -169,9 +130,9 @@ This is not the precise list of permissions necessary, but it's broad enough
 to allow s3fs to function while being strict enough to restrict access to other
 services.
 
-=================================
-== Aggregated CSS and JS in S3 ==
-=================================
+Aggregated CSS and JS in S3
+------------
+
 If you want your site's aggregated CSS and JS files to be stored on S3, rather
 than the default of storing them on the webserver's local filesystem, you'll
 need to do two things:
@@ -242,104 +203,9 @@ by having the same domain name as your site also point to your S3 bucket. If
 that is the case with your site, enable the "Don't rewrite CSS/JS file paths"
 option to prevent s3fs from prefixing the URLs for CSS/JS files.
 
-======================================
-== Configuring S3FS in settings.php ==
-======================================
-If you want to configure S3 File System entirely from settings.php, here are
-examples of how to configure each setting:
+Known Issues
+------------
 
-// All the s3fs config settings start with "s3fs_"
-$conf['s3fs_use_instance_profile'] = TRUE or FALSE;
-$conf['s3fs_credentials_file'] = '/full/path/to/credentials.ini';
-$conf['s3fs_bucket'] = 'YOUR BUCKET NAME';
-$conf['s3fs_region'] = 'YOUR REGION';
-$conf['s3fs_use_cname'] = TRUE or FALSE;
-$conf['s3fs_domain'] = 'cdn.example.com';
-$conf['s3fs_domain_root'] = 'none', 'root', 'public', or 'root_public';
-$conf['s3fs_domain_s3_private'] = TRUE or FALSE;
-$conf['s3fs_use_customhost'] = TRUE or FALSE;
-$conf['s3fs_hostname'] = 'host.example.com';
-$conf['s3fs_use_versioning'] = TRUE OR FALSE;
-$conf['s3fs_cache_control_header'] = 'public, max-age=300';
-$conf['s3fs_encryption'] = 'aws:kms';
-$conf['s3fs_use_https'] = TRUE or FALSE;
-$conf['s3fs_ignore_cache'] = TRUE or FALSE;
-$conf['s3fs_use_s3_for_public'] = TRUE or FALSE;
-$conf['s3fs_no_rewrite_cssjs'] = TRUE or FALSE;
-$conf['s3fs_use_s3_for_private'] = TRUE or FALSE;
-$conf['s3fs_root_folder'] = 'drupal-root';
-$conf['s3fs_public_folder'] = 's3fs-public';
-$conf['s3fs_private_folder'] = 's3fs-private';
-$conf['s3fs_presigned_urls'] = "300|presigned-files/*\n60|other-presigned/*";
-$conf['s3fs_saveas'] = "videos/*\nfull-size-images/*";
-$conf['s3fs_torrents'] = "yarrr/*";
-
-// AWS Credentials use a different prefix than the rest of s3fs's settings
-$conf['awssdk_access_key'] = 'YOUR ACCESS KEY';
-$conf['awssdk_secret_key'] = 'YOUR SECRET KEY';
-
-===========================================
-== Upgrading from S3 File System 7.x-1.x ==
-===========================================
-s3fs 7.x-2.x is not 100% backwards-compatible with 7.x-1.x. Most things will
-work the same, but if you were using certain options in 1.x, you'll need to
-perform some manual intervention to handle the upgrade to 2.x.
-
-The Partial Refresh Prefix setting has been replaced with the Root Folder
-setting. Root Folder fulfills the same purpose, but the implementation is
-sufficiently different that you'll need to re-configure your site, and
-possibly rearrange the files in your S3 bucket to make it work.
-
-With Root Folder, *everything* s3fs does is contained to the specified folder
-in your bucket. s3fs acts like the root folder is the bucket root, which means
-that the URIs for your files will not reflect the root folder's existence.
-Thus, you won't need to configure anything else, like the "file directory"
-setting of file and image fields, to make it work.
-
-This is different from how Partial Refresh Prefix worked, because that prefix
-*was* reflected in the uris, and you had to configure your file and image
-fields appropriately.
-
-So, when upgrading to 7.x-2.x, you'll need to set the Root Folder option to the
-same value that you had for Partial Refresh Prefix, and then remove that folder
-from your fields' "File directory" settings. Then, move every file that s3fs
-previously put into your bucket into the Root Folder. And if there are other
-files in your bucket that you want s3fs to know about, move them into there,
-too. Then do a metadata refresh.
-
-===================================================
-== Upgrading from AWS SDK Version 2 to Version 3 ==
-===================================================
-If you previously used AWS SDK Version 2 and are now upgrading to Version 3,
-there are a few important points to consider.
-
-First, if using the Libraries module to manage the SDK, make sure the libraries
-subfolder name where AWS SDK stored is updated from "awssdk2" to "awssdk". Also,
-after the s3fs module is updated and the new SDK code has been downloaded, it
-is important to run a Drush database update (drush updatedb) to ensure database
-variable names are properly updated.
-
-If you have configuration settings in your settings.php file referencing
-old s3fs variable names, please make sure these are updated to their new
-names. Changes are as follows:
-  - awssdk2_access_key --> awssdk_access_key
-  - awssdk2_secret_key --> awssdk_access_key
-  - awssdk2_use_instance_profile --> s3fs_use_instance_profile
-  - awssdk2_default_cache_config --> s3fs_credentials_file
-
-Finally, if you previously used the Default Cache Location setting to
-define where the profile credentials should be cached, this has been
-changed. It is recommended to use AWS IAM users to provide secure access.
-
-If you would prefer a file-based approach, it is necessary to create a
-credentials.ini file to be stored on your server using the new
-"s3fs_credentials_file" variable. Possible options are discussed here:
-https://docs.aws.amazon.com/aws-sdk-php/v3/guide/guide/credentials.html
-https://docs.aws.amazon.com/sdk-for-php/v3/developer-guide/guide_configuration.html
-
-==================
-== Known Issues ==
-==================
 Some curl libraries, such as the one bundled with MAMP, do not come
 with authoritative certificate files. See the following page for details:
 http://dev.soup.io/post/56438473/If-youre-using-MAMP-and-doing-something
@@ -356,9 +222,41 @@ thrown. If your server uses eAccelerator, it is highly recommended that you
 replace it with a different opcode cache plugin, as its development was
 abandoned several years ago.
 
-=====================
-== Acknowledgments ==
-=====================
+Differences from Drupal 7
+-------------------------
+
+The basic functionality of the Drupal module remains.  Because of Backdrop's configuration management configuration
+in the settings.php file is no longer possible.
+
+Advanced features have not been fully tested.
+
+Issues <!-- This section is required. -->
+------
+
+Bugs and feature requests should be reported in [the Issue Queue](https://github.com/backdrop-contrib/s3fs/issues).
+
+Current Maintainers
+-------------------
+
+- [Justin Keiser](https://github.com/keiserjb).
+- [Jane Lee](https://github.com/username).<!-- You may also wish to add: -->
+- Seeking additional maintainers.
+
+Credits
+-------
+
+- Ported to Backdrop CMS by [Justin Keiser](https://github.com/keiserjb).
+- Originally written for Drupal by [Robert Rollins](https://github.com/coredumperror).
+
+License
+-------
+
+This project is GPL v2 software.
+See the LICENSE.txt file in this directory for complete text.
+
+The AWS SDK library for PHP is licensed under an Apache License.
+Acknowledgements
+------------
 Special recognition goes to justafish, author of the AmazonS3 module:
 http://drupal.org/project/amazons3
 S3 File System started as a fork of her great module, but has evolved

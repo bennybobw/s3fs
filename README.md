@@ -239,7 +239,6 @@ Current Maintainers
 -------------------
 
 - [Justin Keiser](https://github.com/keiserjb).
-- [Jane Lee](https://github.com/username).<!-- You may also wish to add: -->
 - Seeking additional maintainers.
 
 Credits

@@ -153,14 +153,14 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
     }
 
     // Begin construction if not cached.
-    $this->config = _s3fs_get_config();
+    $this->config = config('s3fs.settings');
     $this->s3 = _s3fs_get_amazons3_client($this->config);
     $this->register($this->s3);
     $this->context = stream_context_get_default();
     stream_context_set_option($this->context, 's3', 'seekable', TRUE);
 
     // Check if bucket is configured.
-    if (empty($this->config['bucket'])) {
+    if (empty($this->config->get('s3fs_bucket'))) {
       $msg = t('Your AmazonS3 bucket name is not configured. Please visit the !settings_page.',
         array('!settings_page' => l(t('configuration page'), '/admin/config/media/s3fs/settings')));
       watchdog('S3 File System', $msg, array(), WATCHDOG_ERROR);
@@ -170,19 +170,20 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
     // Always use HTTPS when the page is being served via HTTPS, to avoid
     // complaints from the browser about insecure content.
     global $is_https;
-    if ($is_https) {
+   /* if ($is_https) {
       // We change the config itself, rather than simply using $is_https in
       // the following if condition, because $this->config['use_https'] gets
       // used again later.
-      $this->config['use_https'] = TRUE;
-    }
+      $this->config->get('s3fs_use_https') = TRUE;
+    }*/
 
-    $scheme = (!empty($this->config['use_https'])) ? 'https' : 'http';
+    $scheme = (!empty($this->config->get('s3fs_use_https'))) ? 'https' : 'http';
 
     // CNAME support for customizing S3 URLs.
     // If use_cname is not enabled, file URLs do not use $this->domain.
-    if (!empty($this->config['use_cname']) && !empty($this->config['domain'])) {
-      $domain = check_url($this->config['domain']);
+    if (!empty($this->config->get('s3fs_use_cname')) && !empty
+    ($this->config->get('s3fs_domain'))) {
+      $domain = check_url($this->config->get('s3fs_domain'));
       if ($domain) {
         // If domain is set to a root-relative path, add the hostname back in.
         if (strpos($domain, '/') === 0) {
@@ -197,8 +198,8 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
     }
 
     // Convert the torrents string to an array.
-    if (!empty($this->config['torrents'])) {
-      foreach (explode("\n", $this->config['torrents']) as $line) {
+    if (!empty($this->config->get('s3fs_torrents'))) {
+      foreach (explode("\n", $this->config->get('s3fs_torrents')) as $line) {
         $blob = trim($line);
         if ($blob) {
           $this->torrents[] = $blob;
@@ -208,8 +209,9 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
 
     // Convert the presigned URLs string to an associative array like
     // array(blob => timeout).
-    if (!empty($this->config['presigned_urls'])) {
-      foreach (explode("\n", $this->config['presigned_urls']) as $line) {
+    if (!empty($this->config->get('s3fs_presigned_urls'))) {
+      foreach (explode("\n", $this->config->get('s3fs_presigned_urls')) as
+      $line) {
         $blob = trim($line);
         if ($blob) {
           $matches = array();
@@ -226,8 +228,8 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
     }
 
     // Convert the forced save-as string to an array.
-    if (!empty($this->config['saveas'])) {
-      foreach (explode("\n", $this->config['saveas']) as $line) {
+    if (!empty($this->config->get('s3fs_saveas'))) {
+      foreach (explode("\n", $this->config->get('s3fs_saveas')) as $line) {
         $blob = trim($line);
         if ($blob) {
           $this->saveas[] = $blob;
@@ -363,7 +365,7 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
     // Deal with public:// files.
     if (file_uri_scheme($this->uri) == 'public') {
       // Rewrite all css/js file paths unless the user has told us not to.
-      if (empty($this->config['no_rewrite_cssjs'])) {
+      if (empty($this->config->get('s3fs_no_rewrite_cssjs'))) {
         if (substr($s3_key, -4) == '.css') {
           // Send requests for public CSS files to /s3fs-css/path/to/file.css.
           // Users must set that path up in the webserver config as a proxy into
@@ -378,10 +380,11 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
       }
 
       // public:// files are stored in S3 inside the s3fs_public_folder.
-      $public_folder = !empty($this->config['public_folder']) ? $this->config['public_folder'] : 's3fs-public';
+      $public_folder = !empty($this->config->get('s3fs_public_folder')) ?
+      $this->config->get('s3fs_public_folder') : 's3fs-public';
       // If domain root is not set, or the value is set to map to the root
       // folder, include the public folder.
-      if ($this->config['domain_root'] == 'none' || $this->config['domain_root'] == 'root') {
+      if ($this->config->get('domain_root') == 'none' || $this->config->get('domain_root') == 'root') {
         $s3_key = "{$public_folder}/$s3_key";
       }
     }
@@ -392,7 +395,8 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
       'presigned_url' => FALSE,
       'timeout' => 60,
       'forced_saveas' => FALSE,
-      'api_args' => array('Scheme' => !empty($this->config['use_https']) ? 'https' : 'http'),
+      'api_args' => array('Scheme' => !empty($this->config->get
+      ('s3fs_use_https')) ? 'https' : 'http'),
       'custom_GET_args' => array(),
     );
 
@@ -420,11 +424,12 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
 
     // If a root folder has been set, and domain root is not set, prepend
     // the root folder to the $s3_key at this time.
-    if (!empty($this->config['root_folder']) && ($this->config['domain_root'] == 'none')) {
-      $s3_key = "{$this->config['root_folder']}/$s3_key";
+    if (!empty($this->config->get('s3fs_root_folder')) &&
+      ($this->config['domain_root'] == 'none')) {
+      $s3_key = "{$this->config->get('s3fs_root_folder')}/$s3_key";
     }
 
-    if (empty($this->config['use_cname'])) {
+    if (empty($this->config->get('s3fs_use_cname'))) {
       // We're not using a CNAME, so we ask S3 for the URL.
       $expires = NULL;
       if ($url_settings['presigned_url']) {
@@ -445,13 +450,14 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
       }
       if ($url_settings['presigned_url']) {
         $cmd = $this->s3->getCommand('GetObject', array(
-          'Bucket' => $this->config['bucket'],
+          'Bucket' => $this->config->get('s3fs_bucket'),
           'Key' => $s3_key,
         ));
         $external_url = (string) $this->s3->createPresignedRequest($cmd, $expires)->getUri();
       }
       else {
-        $external_url = $this->s3->getObjectUrl($this->config['bucket'], $s3_key);
+        $external_url = $this->s3->getObjectUrl($this->config->get('s3fs_bucket'),
+          $s3_key);
       }
     }
     else {
@@ -462,7 +468,8 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
     // If this file is versioned, append the version number as a GET arg to
     // ensure that browser caches will be bypassed upon version changes.
     $meta = $this->_read_cache($this->uri);
-    if (!empty($meta['version']) && !empty($this->config['use_versioning'])) {
+    if (!empty($meta['version']) && !empty
+      ($this->config->get('s3fs_use_versioning'))) {
       $external_url = $this->_append_get_arg($external_url, $meta['version']);
     }
     // Torrents can only be created for publicly-accessible files:
@@ -665,7 +672,9 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
     // will get PermissionDenied errors, and torrent URLs won't work. The one exception to
     // this is when all content is being routed through an edge service and access via S3
     // should be blocked.
-    if (!empty($this->config['use_cname']) && !empty($this->config['domain']) && !empty($this->config['domain_s3_private'])) {
+    if (!empty($this->config->get('s3fs_use_cname')) && !empty
+      ($this->config->get('s3fs_domain')) && !empty
+      ($this->config->get('s3fs_domain_s3_private'))) {
       $options[$this->protocol]['ACL'] = 'private';
     }
     elseif (file_uri_scheme($this->uri) != 'private') {
@@ -674,17 +683,17 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
       $options[$this->protocol]['ACL'] = 'public-read';
     }
     // Set the Cache-Control header, if the user specified one.
-    if (!empty($this->config['cache_control_header'])) {
+    if (!empty($this->config->get('s3fs_cache_control_header'))) {
       $options[$this->protocol]['CacheControl'] = $this->config['cache_control_header'];
     }
 
-    if (!empty($this->config['encryption'])) {
-      $options[$this->protocol]['ServerSideEncryption'] = $this->config['encryption'];
+    if (!empty($this->config->get('s3fs_encryption'))) {
+      $options[$this->protocol]['ServerSideEncryption'] = $this->config->get('s3fs_encryption');
     }
 
     // Legacy support: set bucket and key values that were present with
     // AWS SDK v2. Used by AdvAgg module with hook_s3fs_upload_params_alter().
-    $options[$this->protocol]['Bucket'] = $this->config['bucket'];
+    $options[$this->protocol]['Bucket'] = $this->config->get('s3fs_bucket');
     $convertedPath = $this->convertUriToKeyedPath($this->uri, FALSE);
     $options[$this->protocol]['Key'] = file_uri_target($convertedPath);
 
@@ -993,7 +1002,7 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
 
     // If cache ignore is enabled, query S3 for all uris which aren't in the
     // cache, and non-folder uris which are.
-    if (!empty($this->config['ignore_cache']) && !$metadata['dir']) {
+    if (!empty($this->config->get('s3fs_ignore_cache')) && !$metadata['dir']) {
       try {
         // If _get_metadata_from_s3() returns FALSE, the file doesn't exist.
         $metadata = $this->_get_metadata_from_s3($uri);
@@ -1142,8 +1151,10 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
 
     if (!empty($parts[1])) {
       // public:// file are all placed in the s3fs_public_folder.
-      $public_folder = !empty($this->config['public_folder']) ? $this->config['public_folder'] : 's3fs-public';
-      $private_folder = !empty($this->config['private_folder']) ? $this->config['private_folder'] : 's3fs-private';
+      $public_folder = !empty($this->config->get('s3fs_public_folder')) ?
+      $this->config->get('s3fs_public_folder') : 's3fs-public';
+      $private_folder = !empty($this->config->get('s3fs_private_folder')) ?
+        $this->config->get('s3fs_private_folder') : 's3fs-private';
       if (file_uri_scheme($uri) == 'public') {
         $parts[1] = "$public_folder/{$parts[1]}";
       }
@@ -1153,13 +1164,13 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
       }
 
       // If it's set, all files are placed in the root folder.
-      if (!empty($this->config['root_folder'])) {
-        $parts[1] = "{$this->config['root_folder']}/{$parts[1]}";
+      if (!empty($this->config->get('s3fs_root_folder'))) {
+        $parts[1] = "{$this->config->get('s3fs_root_folder')}/{$parts[1]}";
       }
 
       // Prepend the uri with a bucket since AWS SDK expects this.
       if ($prepend_bucket) {
-        $parts[1] = $this->config['bucket'] . '/' . $parts[1];
+        $parts[1] = $this->config->get('s3fs_bucket') . '/' . $parts[1];
       }
     }
 
@@ -1180,7 +1191,7 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
   protected function getCommandParams($uri) {
     $convertedPath = $this->convertUriToKeyedPath($uri, FALSE);
     $params = $this->getOptions(true);
-    $params['Bucket'] = $this->config['bucket'];
+    $params['Bucket'] = $this->config->get('s3fs_bucket');
     $params['Key'] = file_uri_target($convertedPath);
     return $params;
   }

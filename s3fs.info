@@ -5,10 +5,6 @@ type = module
 
 configure = admin/config/media/s3fs/settings
 
-; Either or dependencies don't exist.
-;dependencies[] = composer_manager
-; or
-;dependencies[] = libraries
 
 ; Includes
 ; Tests

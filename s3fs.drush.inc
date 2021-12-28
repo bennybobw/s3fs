@@ -7,7 +7,6 @@
 
 /**
  * Implements hook_drush_command().
-().
  */
 function s3fs_drush_command() {
   $items = array();

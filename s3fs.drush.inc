@@ -7,22 +7,24 @@
 
 /**
  * Implements hook_drush_command().
-().
+ * ().
  */
 function s3fs_drush_command() {
-  $items = array();
-  $items['s3fs-refresh-cache'] = array(
+  $items = [];
+  $items['s3fs-refresh-cache'] = [
     'description' => dt('Refresh the S3 File System metadata cache.'),
-    'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
-    'aliases' => array('s3fs-rc'),
-    'callback' => 'drush_s3fs_refresh_cache',
-  );
-  $items['s3fs-copy-local'] = array(
-    'description' => dt('Copy local files from your public and/or private file system(s) into your S3 bucket, if s3fs is configured to take them over.'),
-    'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
-    'aliases' => array('s3fs-cl'),
-    'callback' => 'drush_s3fs_copy_local',
-  );
+    'bootstrap'   => DRUSH_BOOTSTRAP_DRUSH,
+    'aliases'     => ['s3fs-rc'],
+    'callback'    => 'drush_s3fs_refresh_cache',
+  ];
+  $items['s3fs-copy-local'] = [
+    'description' => dt(
+      'Copy local files from your public and/or private file system(s) into your S3 bucket, if s3fs is configured to take them over.'
+    ),
+    'bootstrap'   => DRUSH_BOOTSTRAP_DRUSH,
+    'aliases'     => ['s3fs-cl'],
+    'callback'    => 'drush_s3fs_copy_local',
+  ];
   return $items;
 }
 
@@ -30,10 +32,12 @@ function s3fs_drush_command() {
  * Refreshes the file metadata cache.
  */
 function drush_s3fs_refresh_cache() {
-  $config = _s3fs_get_config();
+  $config = config('s3fs.settings');
   if (!_s3fs_validate_config($config)) {
     backdrop_set_message(
-      dt('Unable to validate your s3fs configuration settings. Please configure S3 File System from the admin/config/media/s3fs page and try again.'),
+      dt(
+        'Unable to validate your s3fs configuration settings. Please configure S3 File System from the admin/config/media/s3fs page and try again.'
+      ),
       'error'
     );
     return;
@@ -46,24 +50,33 @@ function drush_s3fs_refresh_cache() {
  * if s3fs is configured to take over those systems.
  */
 function drush_s3fs_copy_local() {
-  $config = _s3fs_get_config();
+  $config = config('s3fs.settings');
   if (!_s3fs_validate_config($config)) {
     backdrop_set_message(
-      dt('Unable to validate your s3fs configuration settings. Please configure S3 File System from the admin/config/media/s3fs page and try again.'),
+      dt(
+        'Unable to validate your s3fs configuration settings. Please configure S3 File System from the admin/config/media/s3fs page and try again.'
+      ),
       'error'
     );
     return;
   }
-  if (empty($config['use_s3_for_public']) && empty($config['use_s3_for_private'])) {
+  if (
+    empty($config->get('s3fs_use_s3_for_public'))
+    && empty($config->get(
+      's3fs_use_s3_for_private'
+    ))
+  ) {
     backdrop_set_message(
-      dt('S3 File System is not configured to take over any other file systems.')
+      dt(
+        'S3 File System is not configured to take over any other file systems.'
+      )
     );
     return;
   }
-  if (!empty($config['use_s3_for_public'])) {
+  if (!empty($config->get('s3fs_use_s3_for_public'))) {
     _s3fs_copy_file_system_to_s3('public');
   }
-  if (!empty($config['use_s3_for_private'])) {
+  if (!empty($config->get('s3fs_use_s3_for_private'))) {
     _s3fs_copy_file_system_to_s3('private');
   }
 }

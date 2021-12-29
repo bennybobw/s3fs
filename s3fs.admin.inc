@@ -12,6 +12,7 @@ function s3fs_settings($form, &$form_state) {
   $form['#config'] = 's3fs.settings';
   // @todo Read endpoints from (composer_manager_vendor_dir() . 'aws/aws-sdk-php/src/data/endpoints.json')
   $region_map = array(
+    '' => t('Default'),
     'af-south-1' => t('Africa - Cape Town (af-south-1)'),
     'ap-east-1' => t('Asia Pacific - Hong Kong (ap-east-1)'),
     'ap-northeast-1' => t('Asia Pacific - Tokyo (ap-northeast-1)'),

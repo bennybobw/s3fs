@@ -8,5 +8,6 @@
     "s3fs_awssdk_use_instance_profile": "",
     "s3fs_no_rewrite_cssjs": false,
     "s3fs_file_uri_scheme_override": false,
-    "s3fs_bucket": ""
+    "s3fs_bucket": "",
+    "s3fs_region": "us-east-1"
 }

@@ -216,7 +216,13 @@ License
 
 This project is GPL v2 software. See the LICENSE.txt file in this directory for complete text.
 
+<<<<<<< HEAD
 The AWS SDK library for PHP is licensed under an Apache License. Acknowledgements
+=======
+The AWS SDK library for PHP is licensed under an Apache License.
+
+Acknowledgements
+>>>>>>> b366ad562c56b0c49e1a5d9b9f118ec21d04ce19
 ------------
 Special recognition goes to justafish, author of the AmazonS3 module:
 http://drupal.org/project/amazons3

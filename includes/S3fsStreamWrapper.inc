@@ -170,19 +170,19 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
     // Always use HTTPS when the page is being served via HTTPS, to avoid
     // complaints from the browser about insecure content.
     global $is_https;
-   /* if ($is_https) {
-      // We change the config itself, rather than simply using $is_https in
-      // the following if condition, because $this->config['use_https'] gets
-      // used again later.
-      $this->config->get('s3fs_use_https') = TRUE;
-    }*/
+    /* if ($is_https) {
+       // We change the config itself, rather than simply using $is_https in
+       // the following if condition, because $this->config['use_https'] gets
+       // used again later.
+       $this->config->get('s3fs_use_https') = TRUE;
+     }*/
 
     $scheme = (!empty($this->config->get('s3fs_use_https'))) ? 'https' : 'http';
 
     // CNAME support for customizing S3 URLs.
     // If use_cname is not enabled, file URLs do not use $this->domain.
     if (!empty($this->config->get('s3fs_use_cname')) && !empty
-    ($this->config->get('s3fs_domain'))) {
+      ($this->config->get('s3fs_domain'))) {
       $domain = check_url($this->config->get('s3fs_domain'));
       if ($domain) {
         // If domain is set to a root-relative path, add the hostname back in.
@@ -211,7 +211,7 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
     // array(blob => timeout).
     if (!empty($this->config->get('s3fs_presigned_urls'))) {
       foreach (explode("\n", $this->config->get('s3fs_presigned_urls')) as
-      $line) {
+               $line) {
         $blob = trim($line);
         if ($blob) {
           $matches = array();
@@ -258,7 +258,7 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
   }
 
   /***************************************************************************
-   BackdropStreamWrapperInterface Implementations
+  BackdropStreamWrapperInterface Implementations
    ***************************************************************************/
 
   public static function getMimeType($uri, $mapping = NULL) {
@@ -302,6 +302,7 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
    *   The URI that should be used for this instance.
    */
   public function setUri($uri) {
+    $this->_prevent_cross_scheme_access($uri);
     $this->uri = $uri;
   }
 
@@ -381,10 +382,10 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
 
       // public:// files are stored in S3 inside the s3fs_public_folder.
       $public_folder = !empty($this->config->get('s3fs_public_folder')) ?
-      $this->config->get('s3fs_public_folder') : 's3fs-public';
+        $this->config->get('s3fs_public_folder') : 's3fs-public';
       // If domain root is not set, or the value is set to map to the root
       // folder, include the public folder.
-      if ($this->config->get('domain_root') == 'none' || $this->config->get('domain_root') == 'root') {
+      if ($this->config->get('s3fs_domain_root') == 'none' || $this->config->get('s3fs_domain_root') == 'root') {
         $s3_key = "{$public_folder}/$s3_key";
       }
     }
@@ -425,7 +426,7 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
     // If a root folder has been set, and domain root is not set, prepend
     // the root folder to the $s3_key at this time.
     if (!empty($this->config->get('s3fs_root_folder')) &&
-      ($this->config['domain_root'] == 'none')) {
+      ($this->config->get('s3fs_domain_root') == 'none')) {
       $s3_key = "{$this->config->get('s3fs_root_folder')}/$s3_key";
     }
 
@@ -510,7 +511,7 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
   }
 
   /***************************************************************************
-   Public Functions for External Use of the Wrapper
+  Public Functions for External Use of the Wrapper
    ***************************************************************************/
 
   /**
@@ -524,6 +525,7 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
    *   begin to exist within 10 seconds.
    */
   public function waitUntilFileExists($uri) {
+    $this->_prevent_cross_scheme_access($uri);
     // Retry ten times, once every second.
     $params = $this->getCommandParams($uri);
     $params['@waiter'] = array(
@@ -547,6 +549,7 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
    * then have us write the correct metadata into our cache.
    */
   public function writeUriToCache($uri) {
+    $this->_prevent_cross_scheme_access($uri);
     if ($this->waitUntilFileExists($uri)) {
       $metadata = $this->_get_metadata_from_s3($uri);
       $this->_write_cache($metadata);
@@ -555,7 +558,7 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
   }
 
   /***************************************************************************
-   PHP Stream Wrapper Implementations
+  PHP Stream Wrapper Implementations
    ***************************************************************************/
 
   /**
@@ -819,6 +822,8 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
     $bare_path = rtrim($uri, '/');
     $slash_path = $bare_path . '/';
 
+    $this->_prevent_cross_scheme_access($uri);
+
     // If the folder is empty, it's eligible for deletion.
     $file_count = db_select('s3fs_file', 's')
       ->fields('s')
@@ -852,6 +857,8 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
    * @see http://php.net/manual/en/streamwrapper.dir-opendir.php
    */
   public function dir_opendir($uri, $options = NULL) {
+    $this->_prevent_cross_scheme_access($uri);
+
     if (!$this->_path_is_dir($uri)) {
       return FALSE;
     }
@@ -867,14 +874,53 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
       $slash_path = "$scheme://";
     }
 
+    $public_folder = !empty($this->config->get('s3fs_public_folder')) ? $this->config->get('s3fs_public_folder') : 's3fs-public';
+    $public_folder = trim($public_folder, '/');
+    $private_folder = !empty($this->config->get('s3fs_private_folder')) ? $this->config->get('s3fs_private_folder') : 's3fs-private';
+    $private_folder = trim($private_folder, '/');
+
+
     // Get the list of paths for files and folders which are children of the
     // specified folder, but not grandchildren.
-    $child_paths = db_select('s3fs_file', 's')
+    $query = db_select('s3fs_file', 's')
       ->fields('s', array('uri'))
       ->condition('uri', db_like($slash_path) . '%', 'LIKE')
-      ->condition('uri', db_like($slash_path) . '%/%', 'NOT LIKE')
-      ->execute()
-      ->fetchCol(0);
+      ->condition('uri', db_like($slash_path) . '%/%', 'NOT LIKE');
+
+    switch (file_uri_scheme($slash_path)) {
+      case 's3':
+        // Prevent private and public folder from showing nested under
+        // s3://.
+        $query->condition('uri', 's3://' . db_like($public_folder) . '/%', 'NOT LIKE');
+        $query->condition('uri', 's3://' . $public_folder, '<>');
+        $query->condition('uri', 's3://' . db_like($private_folder) . '/%', 'NOT LIKE');
+        $query->condition('uri', 's3://' . $private_folder, '<>');
+        break;
+
+      case 'public':
+        // Prevent the private folder from appearing nested under public://.
+        if (strpos($private_folder, $public_folder) === 0) {
+          $private_search = '#^' . $private_folder . '#';
+          $prefix = preg_replace($private_search, '', $public_folder);
+          $query->condition('uri', 'public://' . db_like($prefix) . '/%', 'NOT LIKE');
+          $query->condition('uri', 'public://' . $prefix, '<>');
+        }
+        break;
+
+      case 'private':
+        // Prevent the public folder from showing up nested under
+        // private://.
+        if (strpos($public_folder, $private_folder) === 0) {
+          $public_search = '#^' . $public_folder . '#';
+          $prefix = preg_replace($public_search, '', $private_folder);
+          $query->condition('uri', 'private://' . db_like($prefix) . '/%', 'NOT LIKE');
+          $query->condition('uri', 'private://' . $prefix, '<>');
+        }
+        break;
+    }
+
+    $child_paths = $query->execute()->fetchCol(0);
+
 
     $this->dir = array();
     foreach ($child_paths as $child_path) {
@@ -900,6 +946,9 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
   }
 
   public function rename($from_path, $to_path) {
+    $this->_prevent_cross_scheme_access($from_path);
+    $this->_prevent_cross_scheme_access($to_path);
+
     // Set access for new item in stream context.
     if (file_uri_scheme($from_path) != 'private') {
       stream_context_set_option($this->context, 's3', 'ACL', 'public-read');
@@ -921,7 +970,7 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
   }
 
   /***************************************************************************
-   Internal Functions
+  Internal Functions
    ***************************************************************************/
 
   /**
@@ -946,6 +995,8 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
    * @return array|bool
    */
   protected function _stat($uri) {
+    $this->_prevent_cross_scheme_access($uri);
+
     $metadata = $this->_s3fs_get_object($uri);
     if ($metadata) {
       $stat = array();
@@ -1036,11 +1087,49 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
       $uri = preg_replace('^private://[/]+^', 'private://', $uri);
     }
 
-    $record = db_select('s3fs_file', 's')
+    $public_folder = !empty($this->config->get('s3fs_public_folder')) ? $this->config->get('s3fs_public_folder') : 's3fs-public';
+    $public_folder = trim($public_folder, '/');
+    $private_folder = !empty($this->config->get['s3fs_private_folder']) ? $this->config->get['s3fs_private_folder'] : 's3fs-private';
+    $private_folder = trim($private_folder, '/');
+
+    $query = db_select('s3fs_file', 's')
       ->fields('s')
-      ->condition('uri', $uri, '=')
-      ->execute()
-      ->fetchAssoc();
+      ->condition('uri', $uri, '=');
+
+    switch (file_uri_scheme($uri)) {
+      case 's3':
+        // Prevent private and public folder from showing nested under
+        // s3://.
+        $query->condition('uri', 's3://' . db_like($public_folder) . '/%', 'NOT LIKE');
+        $query->condition('uri', 's3://' . $public_folder, '<>');
+        $query->condition('uri', 's3://' . db_like($private_folder) . '/%', 'NOT LIKE');
+        $query->condition('uri', 's3://' . $private_folder, '<>');
+        break;
+
+      case 'public':
+        // Prevent the private folder from appearing nested under public://.
+        if (strpos($private_folder, $public_folder) === 0) {
+          $private_search = '#^' . $private_folder . '#';
+          $prefix = preg_replace($private_search, '', $public_folder);
+          $query->condition('uri', 'public://' . db_like($prefix) . '/%', 'NOT LIKE');
+          $query->condition('uri', 'public://' . $prefix, '<>');
+        }
+        break;
+
+      case 'private':
+        // Prevent the public folder from showing up nested under
+        // private://.
+        if (strpos($public_folder, $private_folder) === 0) {
+          $public_search = '#^' . $public_folder . '#';
+          $prefix = preg_replace($public_search, '', $private_folder);
+          $query->condition('uri', 'private://' . db_like($prefix) . '/%', 'NOT LIKE');
+          $query->condition('uri', 'private://' . $prefix, '<>');
+        }
+        break;
+    }
+
+    $record = $query->execute()->fetchAssoc();
+
     return $record ? $record : FALSE;
   }
 
@@ -1152,7 +1241,7 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
     if (!empty($parts[1])) {
       // public:// file are all placed in the s3fs_public_folder.
       $public_folder = !empty($this->config->get('s3fs_public_folder')) ?
-      $this->config->get('s3fs_public_folder') : 's3fs-public';
+        $this->config->get('s3fs_public_folder') : 's3fs-public';
       $private_folder = !empty($this->config->get('s3fs_private_folder')) ?
         $this->config->get('s3fs_private_folder') : 's3fs-private';
       if (file_uri_scheme($uri) == 'public') {
@@ -1267,4 +1356,58 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
     }
     return $new_url;
   }
+  /**
+   * Prevent cross scheme access attempts.
+   *
+   * @param string $uri
+   *   Uri attempt to access.
+   *
+   * @throws \Exception
+   *   Cross scheme access attempt has been rejected.
+   */
+  protected function _prevent_cross_scheme_access($uri) {
+    $uri = file_stream_wrapper_uri_normalize($uri);
+
+    $public_folder = !empty($this->config->get('s3fs_public_folder')) ? $this->config->get('s3fs_public_folder') : 's3fs-public';
+    $public_folder = trim($public_folder, '/');
+    $private_folder = !empty($this->config->get('s3fs_private_folder')) ? $this->config->get('s3fs_private_folder') : 's3fs-private';
+    $private_folder = trim($private_folder, '/');
+
+    $scheme = file_uri_scheme($uri);
+
+    switch ($scheme) {
+      case 's3':
+        // Attempt to use s3:// to access public:// or private:// path.
+        if (strpos($uri, 's3://' . $public_folder) === 0 || strpos($uri, 's3://' . $private_folder) === 0) {
+          throw new Exception("Cross scheme access attempt blocked");
+        }
+        break;
+
+      case 'public':
+        // Private folder may be nested under public folder.
+        if (strpos($private_folder, $public_folder) === 0) {
+          $public_search = '#^' . $public_folder . '#';
+          $prefix = preg_replace($public_search, '', $private_folder);
+          $prefix = trim($prefix, '/');
+
+          if (strpos($uri, 'public://' . $prefix . '/') === 0) {
+            throw new Exception("Cross scheme access attempt blocked");
+          }
+        }
+        break;
+
+      case 'private':
+        // Public folder may be nested under private folder.
+        if (strpos($public_folder, $private_folder) === 0) {
+          $private_search = '#^' . $private_folder . '#';
+          $prefix = preg_replace($private_search, '', $public_folder);
+          $prefix = trim($prefix, '/');
+          if (strpos($uri, 'private://' . $prefix . '/') === 0) {
+            throw new Exception("Cross scheme access attempt blocked");
+          }
+        }
+        break;
+    }
+  }
+
 }

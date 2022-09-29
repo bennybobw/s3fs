@@ -1,6 +1,9 @@
 S3 File System
 ======================
 
+This branch was ported from the 7.x-2.x branch of the Drupal version which was marked unsupported on May 31, 2022. This branch will not receive any updates.
+
+
 S3 File System (s3fs) provides an additional file system to your Backdrop site,
 alongside the public and private file systems, which stores files in Amazon's
 Simple Storage Service (S3) (or any S3-compatible storage service). You can set

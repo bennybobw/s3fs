@@ -1,6 +1,0 @@
-[S3fsTests]
-name = S3 File System Tests
-description = Ensure that the remote file system functionality provided by S3 File System works correctly.
-group = S3 File System
-file = tests/s3fs.test
-

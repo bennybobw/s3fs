@@ -2,12 +2,10 @@ name = S3 File System
 description = Adds an Amazon Simple Storage Service-based remote file system to Backdrop.
 backdrop = 1.x
 type = module
+
 configure = admin/config/media/s3fs/settings
 
 
-
-project = s3fs
-version = 1.x
 ; Includes
 ; Tests
 ; s3fs's tests depend on simpletest_clone, but you only need it for the tests,

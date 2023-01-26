@@ -48,18 +48,31 @@ function s3fs_requirements($phase)
       'severity' => REQUIREMENT_WARNING,
     );
   }
-
-
-
-
-  return $requirements;
 }
 
 /**
  * Implements hook_uninstall().
 ().
  */
+function s3fs_uninstall()
+{
+  // Load our module file, since s3fs is current disabled.
+  backdrop_load('module', 's3fs');
 
+  // Remove all the s3fs settings variables.
+  foreach (_s3fs_get_config() as $key => $value) {
+    config_clear('s3fs.settings', "s3fs_$key");
+  }
+
+  // Remove 's3' from the list of public file schemas.
+  // TODO This variable was probably removed in Backdrop without replacement.
+  $public_schema = config_get('file_public_schema');
+  if (is_array($public_schema) && in_array('s3', $public_schema)) {
+    $public_schema = array_diff($public_schema, array('s3'));
+    // TODO This variable was probably removed in Backdrop without replacement.
+    config_set('file_public_schema', $public_schema);
+  }
+}
 
 /**
  * Implements hook_schema().
@@ -112,6 +125,7 @@ function s3fs_schema()
   );
 
   return $schema;
+<<<<<<< HEAD
 }
 
 
@@ -130,6 +144,108 @@ function s3fs_update_last_removed()
   return 7207;
 }
 
+=======
+}
+
+/**
+ * Implements hook_install().
+ *
+ * Adds s3:// to the the core file module's list of public schema.
+ * See https://www.drupal.org/node/2305017 for more info.
+ */
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function s3fs_update_7000()
+{
+}
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function s3fs_update_7001()
+{
+}
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function s3fs_update_7002()
+{
+}
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function s3fs_update_7003()
+{
+}
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function s3fs_update_7004()
+{
+}
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function s3fs_update_7005()
+{
+}
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function s3fs_update_7006()
+{
+}
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function s3fs_update_7200()
+{
+}
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function s3fs_update_7201()
+{
+}
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function s3fs_update_7202()
+{
+}
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function s3fs_update_7203()
+{
+}
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function s3fs_update_7204()
+{
+}
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function s3fs_update_7205()
+{
+}
+
+// TODO The old hook_update_N functions cannot be applied to Backdrop.
+function s3fs_update_7206()
+{
+}
+
+/******************************************************************************
+ *                            INTERNAL FUNCTONS
+ ******************************************************************************/
+/*function _s3fs_register_s3_as_public_schema()
+{
+  // TODO This variable was probably removed in Backdrop without replacement.
+  $public_schema = config_get('file_public_schema', array('public'));
+  if (!in_array('s3', $public_schema)) {
+    $public_schema[] = 's3';
+  }
+  // TODO This variable was probably removed in Backdrop without replacement.
+  config_set('file_public_schema', $public_schema);
+}*/
+
+/**
+ * Implements hook_update_last_removed().
+ */
+function s3fs_update_last_removed()
+{
+  return 7206;
+}
+
 /**
  * Migrate s3fs variables to config.
  */
@@ -137,21 +253,33 @@ function s3fs_update_1000()
 {
   $config = config('s3fs.settings');
 
-  $config->set('s3fs_bucket', update_variable_get('s3fs_bucket'));
-  $config->set('s3fs_region', update_variable_get('s3fs_region',  'us-east-1'));
+  $config->set('s3fs_customhost', update_variable_get('s3fs_customhost'));
+  $config->set('s3fs_cname', update_variable_get('s3fs_cname'));
+  $config->set('s3fs_allow_relative', update_variable_get('s3fs_allow_relative'));
+  $config->set('s3fs_use_relative_urls', update_variable_get('s3fs_use_relative_urls'));
+  $config->set('use_instance_profile', update_variable_get('use_instance_profile'));
+  $config->set('s3fs_awssdk2_use_instance_profile', update_variable_get('s3fs_awssdk2_use_instance_profile'));
+  $config->set('s3fs_no_rewrite_cssjs', update_variable_get('s3fs_no_rewrite_cssjs'));
+  $config->set('s3fs_file_uri_scheme_override', update_variable_get('s3fs_file_uri_scheme_override'));
+  $config->set('s3fs_awssdk2_access_key', update_variable_get('s3fs_awssdk2_access_key'));
+  $config->set('s3fs_awssdk2_secret_key', update_variable_get('s3fs_awssdk2_secret_key'));
+  $config->set('s3fs_awssdk2_default_cache_$config', update_variable_get('s3fs_awssdk2_default_cache_$config'));
+  $config->set('s3fs_awssdk2_default_cache_$config', update_variable_get('s3fs_awssdk2_default_cache_$config'));
+  $config->set('s3fs_bucket', update_variable_get('s3fs_bucket'()));
+  $config->set('s3fs_region', update_variable_get('s3fs_region'));
   $config->set('s3fs_use_cname', update_variable_get('s3fs_use_cname'));
   $config->set('s3fs_domain', update_variable_get('s3fs_domain'));
   $config->set('s3fs_domain_root', update_variable_get('s3fs_domain_root'));
   $config->set('s3fs_domain_s3_private', update_variable_get('s3fs_domain_s3_private'));
   $config->set('s3fs_use_customhost', update_variable_get('s3fs_use_customhost'));
   $config->set('s3fs_hostname', update_variable_get('s3fs_hostname'));
+  $config->set('s3fs_no_redirect_derivatives', update_variable_get('s3fs_no_redirect_derivatives'));
   $config->set('s3fs_use_versioning', update_variable_get('s3fs_use_versioning'));
   $config->set('s3fs_cache_control_header', update_variable_get('s3fs_cache_control_header'));
   $config->set('s3fs_encryption', update_variable_get('s3fs_encryption'));
   $config->set('s3fs_use_https', update_variable_get('s3fs_use_https'));
   $config->set('s3fs_ignore_cache', update_variable_get('s3fs_ignore_cache'));
   $config->set('s3fs_use_s3_for_public', update_variable_get('s3fs_use_s3_for_public'));
-  $config->set('s3fs_no_rewrite_cssjs', update_variable_get('s3fs_no_rewrite_cssjs'));
   $config->set('s3fs_use_s3_for_private', update_variable_get('s3fs_use_s3_for_private'));
   $config->set('s3fs_root_folder', update_variable_get('s3fs_root_folder'));
   $config->set('s3fs_public_folder', update_variable_get('s3fs_public_folder'));
@@ -159,31 +287,23 @@ function s3fs_update_1000()
   $config->set('s3fs_presigned_urls', update_variable_get('s3fs_presigned_urls'));
   $config->set('s3fs_saveas', update_variable_get('s3fs_saveas'));
   $config->set('s3fs_torrents', update_variable_get('s3fs_torrents'));
-  $config->set('s3fs_allow_relative', update_variable_get('s3fs_allow_relative'));
-  $config->set('s3fs_use_relative_urls', update_variable_get('s3fs_use_relative_urls'));
-  $config->set('s3fs_use_instance_profile', update_variable_get('s3fs_instance_profile'));
-  $config->set('s3fs_awssdk_use_instance_profile', update_variable_get('s3fs_awssdk_use_instance_profile'));
-  $config->set('s3fs_file_uri_scheme_override', update_variable_get('s3fs_file_uri_scheme_override'));
-  $config->set('s3fs_awssdk_access_key', update_variable_get('s3fs_awssdk_access_key'));
-  $config->set('s3fs_awssdk_secret_key', update_variable_get('s3fs_awssdk_secret_key'));
-  $config->set('s3fs_awssdk_default_cache_$config', update_variable_get('s3fs_awssdk_default_cache_$config'));
-  $config->set('s3fs_no_redirect_derivatives', update_variable_get('s3fs_no_redirect_derivatives'));
 
   $config->save();
 
-  update_variable_del('s3fs_use_customhost');
-  update_variable_del('s3fs_use_cname');
+  update_variable_del('s3fs_customhost');
+  update_variable_del('s3fs_cname');
   update_variable_del('s3fs_allow_relative');
   update_variable_del('s3fs_use_relative_urls');
   update_variable_del('s3fs_use_instance_profile');
-  update_variable_del('s3fs_awssdk_use_instance_profile');
+  update_variable_del('awssdk2_use_instance_profile');
   update_variable_del('s3fs_no_rewrite_cssjs');
   update_variable_del('s3fs_file_uri_scheme_override');
-  update_variable_del('s3fs_awssdk_access_key');
-  update_variable_del('s3fs_awssdk_secret_key');
-  update_variable_del('s3fs_awssdk_default_cache_config');
+  update_variable_del('awssdk2_access_key');
+  update_variable_del('awssdk2_secret_key');
+  update_variable_del('awssdk2_default_cache_config');
   update_variable_del('s3fs_bucket');
   update_variable_del('s3fs_region');
+  update_variable_del('s3fs_use_cname');
   update_variable_del('s3fs_domain');
   update_variable_del('s3fs_domain_root');
   update_variable_del('s3fs_domain_s3_private');

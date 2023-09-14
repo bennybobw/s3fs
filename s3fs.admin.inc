@@ -47,16 +47,23 @@ function s3fs_settings($form, &$form_state) {
     '#type'        => 'fieldset',
     '#title'       => t('Amazon Web Services Credentials'),
     '#description' => t(
-      "To configure your Amazon Web Services credentials, enter the values in the appropriate fields below."
-    ),
-    '#collapsible' => TRUE,
+      "To configure your Amazon Web Services credentials, enter the values in settings.php.<br>" .
+      "For more information, please check the <a href='https://docs.backdropcms.org/change-records/any-config-value-can-be-overridden-via-settingsphp' target='_blank'>Backdrop CMS Documentation</a>."
+      ),
+    '#collapsible' => FALSE,
     // Simplify the form by collapsing this fieldset if it's already been configured.
-    '#collapsed'   => $config->get('s3fs_awssdk_access_key') || $config->get('s3fs_use_instance_profile'),
+    /*'#collapsed'   => $config->get('s3fs_awssdk_access_key') || $config->get('s3fs_use_instance_profile'),*/
+
+  );
+  // Add the provided text as a markup element within the fieldset.
+  $form['aws_credentials']['markup'] = array(
+    '#markup' => "<pre>\$config['s3fs.settings']['s3fs_awssdk_access_key'] = 'your_access_key';<br>" .
+      "\$config['s3fs.settings']['s3fs_awssdk_secret_key'] = 'your_secret_key';</pre>"
   );
   # NOTE: The awssdk settings can be a bit confusing. They start with "s3fs_"
   # to ensure that they get pulled as part of _s3fs_get_config(), but they can
   # be hard-coded as overrides in settings.php without the s3fs_ prefix.
-  $form['aws_credentials']['s3fs_awssdk_access_key'] = array(
+  /*$form['aws_credentials']['s3fs_awssdk_access_key'] = array(
     '#type'          => 'textfield',
     '#title'         => t('Amazon Web Services Access Key'),
     '#default_value' => $config->get('s3fs_awssdk_access_key'),
@@ -65,7 +72,7 @@ function s3fs_settings($form, &$form_state) {
     '#type'          => 'textfield',
     '#title'         => t('Amazon Web Services Secret Key'),
     '#default_value' => $config->get('s3fs_awssdk_secret_key'),
-  );
+  );*/
   $form['aws_credentials']['s3fs_use_instance_profile'] = array(
     '#type'          => 'checkbox',
     '#title'         => t('Use EC2 Instance Profile Credentials'),
@@ -75,7 +82,7 @@ function s3fs_settings($form, &$form_state) {
       from that server rather than setting your AWS credentials directly.'
     ),
   );
-  $form['aws_credentials']['s3fs_credentials_file'] = array(
+  /*$form['aws_credentials']['s3fs_credentials_file'] = array(
     '#type'          => 'textfield',
     '#title'         => t('Custom Credentials File Location'),
     '#default_value' => $config->get('s3fs_credentials_file'),
@@ -85,6 +92,11 @@ function s3fs_settings($form, &$form_state) {
         ':input[id=edit-s3fs-use-instance-profile]' => array('checked' => TRUE),
       ),
     ),
+  );*/
+  $form['aws_credentials']['s3fs_credentials_file'] = array(
+    '#markup' => '<p>' . t('To set the custom credentials file location in settings.php, add the following code:') . '</p>' .
+      '<pre>$config[\'s3fs.settings\'][\'s3fs_credentials_file\'] = \'path_to_credentials_file.ini\';</pre>' .
+      '<p>' . t('Replace \'path_to_credentials_file.ini\' with the actual file path.') . '</p>',
   );
 
 

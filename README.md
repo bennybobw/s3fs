@@ -9,7 +9,7 @@ fields. This functionality is designed for sites which are load-balanced across
 multiple servers, as the mechanism used by Backdrop's default file systems is not
 viable under such a configuration.
 
-**Very important!**  
+**Very important!**
 Do not save access keys to json configuration files and then save them in a public repo!  Use the instructions to override configuration in settings.php.
 https://docs.backdropcms.org/change-records/any-config-value-can-be-overridden-via-settingsphp
 
@@ -229,8 +229,8 @@ abandoned several years ago.
 Differences from Drupal 7
 -------------------------
 
-The basic functionality of the Drupal module remains.  Because of Backdrop's configuration management configuration
-in the settings.php file is no longer possible.
+Basic functionality of storing and retrieving images in and from an s3 bucket
+should be the same.
 
 Advanced features have not been fully tested.
 

@@ -5,12 +5,3 @@ type = module
 
 configure = admin/config/media/s3fs/settings
 
-
-; Includes
-; Tests
-; s3fs's tests depend on simpletest_clone, but you only need it for the tests,
-; so I don't want to force everyone to install it. There is an alternate check
-; for simpletest_clone in the test code itself.
-; dependencies[] = simpletest_clone
-; If you decide to run the tests, you'll need this patch for simpletest_clone:
-; https://drupal.org/node/1877956

@@ -3,28 +3,11 @@
 
 ---
 
-S3 File System (s3fs) provides an additional file system to your Backdrop site, alongside the public and private file
+S3 File System (s3fs) provides an additional file system to your Backdrop site, alongside the public and private file systems, which stores files in Amazon's Simple Storage Service (S3) (or any S3-compatible storage service). You can set your site to use S3 File System as the default, or use it only for individual fields. This functionality is designed for sites which are load-balanced across multiple servers, as the mechanism used by Backdrop's default file systems is not viable under such a configuration.
 
-systems, which stores files in Amazon's Simple Storage Service (S3) (or any S3-compatible storage service). You can set
-
-your site to use S3 File System as the default, or use it only for individual fields. This functionality is designed for
-
-sites which are load-balanced across multiple servers, as the mechanism used by Backdrop's default file systems is not
-
-viable under such a configuration.
-
-<<<<<<< HEAD
 ## Installation
 
 =======
-**Very important!**
-Do not save access keys to json configuration files and then save them in a public repo!  Use the instructions to override configuration in settings.php.
-https://docs.backdropcms.org/change-records/any-config-value-can-be-overridden-via-settingsphp
-
-Installation
->>>>>>> 73b63d733bc80f7fb20ad76d89daf8d9952c0c60
-------------
-
 Install this module using the official Backdrop CMS instructions
 
 at https://docs.backdropcms.org/documentation/extend-with-modules.
@@ -34,8 +17,6 @@ Visit the configuration page under Administration > Configuration > Media > s3fs
 IN CASE OF TROUBLE DETECTING THE AWS SDK LIBRARY:
 
 Ensure that the awssdk folder itself, and all the files within it, can be read by your webserver. Usually this means that the user "apache" (or "_www" on OSX) must have read permissions for the files, and read+execute permissions for all the folders in the path leading to the awssdk files.
-
-
 
 ## Initial Setup
 
@@ -190,21 +171,14 @@ eAccelerator, a deprecated opcode cache plugin for PHP, is incompatible with AWS
 
 ## Differences from Drupal 7
 
--------------------------
-
-<<<<<<< HEAD
 The ability to save the AWS keys in UI on the settings page was removed.
 
 This needs to be done in settings.php or by using the Key module.
-=======
-Basic functionality of storing and retrieving images in and from an s3 bucket
-should be the same.
->>>>>>> 73b63d733bc80f7fb20ad76d89daf8d9952c0c60
 
 Advanced features have not been fully tested.
 
 
-## Issues <!-- This section is required. -->
+## Issues
 
 ------
 

@@ -163,11 +163,13 @@ Some curl libraries, such as the one bundled with MAMP, do not come with authori
 
 following page for details:
 
-http://dev.soup.io/post/56438473/If-youre-using-MAMP-and-doing-something
+(http://dev.soup.io/post/56438473/If-youre-using-MAMP-and-doing-something)
 
 Because of a bizarre limitation regarding MySQL's maximum index length for InnoDB tables, the maximum uri length that S3FS supports is 250 characters. That includes the full path to the file in your bucket, as the full folder path is part of the uri.
 
 eAccelerator, a deprecated opcode cache plugin for PHP, is incompatible with AWS SDK for PHP. eAccelerator will corrupt the configuration settings for the SDK's s3 client object, causing a variety of different exceptions to be thrown. If your server uses eAccelerator, it is highly recommended that you replace it with a different opcode cache plugin, as its development was abandoned several years ago.
+
+For s3fs 7.x-3.x, the most current supported version of AWS SDK is v3.156.0, which can be downloaded above. This is due to an [open issue](https://www.drupal.org/project/s3fs/issues/3194400).
 
 ## Differences from Drupal 7
 

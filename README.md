@@ -13,8 +13,16 @@ sites which are load-balanced across multiple servers, as the mechanism used by 
 
 viable under such a configuration.
 
+<<<<<<< HEAD
 ## Installation
 
+=======
+**Very important!**
+Do not save access keys to json configuration files and then save them in a public repo!  Use the instructions to override configuration in settings.php.
+https://docs.backdropcms.org/change-records/any-config-value-can-be-overridden-via-settingsphp
+
+Installation
+>>>>>>> 73b63d733bc80f7fb20ad76d89daf8d9952c0c60
 ------------
 
 Install this module using the official Backdrop CMS instructions
@@ -184,9 +192,14 @@ eAccelerator, a deprecated opcode cache plugin for PHP, is incompatible with AWS
 
 -------------------------
 
+<<<<<<< HEAD
 The ability to save the AWS keys in UI on the settings page was removed.
 
 This needs to be done in settings.php or by using the Key module.
+=======
+Basic functionality of storing and retrieving images in and from an s3 bucket
+should be the same.
+>>>>>>> 73b63d733bc80f7fb20ad76d89daf8d9952c0c60
 
 Advanced features have not been fully tested.
 

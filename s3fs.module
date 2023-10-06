@@ -983,7 +983,7 @@ function _s3fs_copy_file_system_to_s3($scheme) {
     $source_folder = config_get('system.core', 'file_private_path');
     $source_folder_real = realpath($source_folder);
     if (empty($source_folder) || empty($source_folder_real)) {
-      backdrop_set_message(
+      bee_message(
         'Private file system base path is unknown. Unable to perform S3 copy.',
         'error'
       );
@@ -1000,7 +1000,7 @@ function _s3fs_copy_file_system_to_s3($scheme) {
     copy($path, "$scheme://$relative_path");
   }
 
-  backdrop_set_message(
+  bee_message(
     t('Copied all local %scheme files to S3.', ['%scheme' => $scheme]),
     'status'
   );

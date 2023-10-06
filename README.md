@@ -7,7 +7,6 @@ S3 File System (s3fs) provides an additional file system to your Backdrop site, 
 
 ## Installation
 
-=======
 Install this module using the official Backdrop CMS instructions
 
 at https://docs.backdropcms.org/documentation/extend-with-modules.

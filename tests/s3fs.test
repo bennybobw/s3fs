@@ -15,7 +15,7 @@ else {
   module_load_include('php', 'simpletest_clone', 'simpletest_clone_test_case');
   // These tests require SimpleTestCloneTestcase because the AWS credentials are
   // configured in settings.php, which apparently doesn't get executed during a
-  // DrupalWebTestcase.
+  // BackdropWebTestcase.
   class S3fsTests extends SimpleTestCloneTestcase {
 
     /**

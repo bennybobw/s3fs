@@ -59,7 +59,25 @@ function s3fs_requirements($phase)
  * Implements hook_uninstall().
 ().
  */
+function s3fs_uninstall()
+{
+  // Load our module file, since s3fs is current disabled.
+  backdrop_load('module', 's3fs');
 
+  // Remove all the s3fs settings variables.
+  foreach (_s3fs_get_config() as $key => $value) {
+    config_clear('s3fs.settings', "s3fs_$key");
+  }
+
+  // Remove 's3' from the list of public file schemas.
+  // TODO This variable was probably removed in Backdrop without replacement.
+  $public_schema = config_get('file_public_schema');
+  if (is_array($public_schema) && in_array('s3', $public_schema)) {
+    $public_schema = array_diff($public_schema, array('s3'));
+    // TODO This variable was probably removed in Backdrop without replacement.
+    config_set('file_public_schema', $public_schema);
+  }
+}
 
 /**
  * Implements hook_schema().
@@ -137,8 +155,8 @@ function s3fs_update_1000()
 {
   $config = config('s3fs.settings');
 
-  $config->set('s3fs_bucket', update_variable_get('s3fs_bucket'));
-  $config->set('s3fs_region', update_variable_get('s3fs_region',  'us-east-1'));
+  $config->set('s3fs_bucket', update_variable_get('s3fs_bucket'()));
+  $config->set('s3fs_region', update_variable_get('s3fs_region'));
   $config->set('s3fs_use_cname', update_variable_get('s3fs_use_cname'));
   $config->set('s3fs_domain', update_variable_get('s3fs_domain'));
   $config->set('s3fs_domain_root', update_variable_get('s3fs_domain_root'));
@@ -166,7 +184,8 @@ function s3fs_update_1000()
   $config->set('s3fs_file_uri_scheme_override', update_variable_get('s3fs_file_uri_scheme_override'));
   $config->set('s3fs_awssdk_access_key', update_variable_get('s3fs_awssdk_access_key'));
   $config->set('s3fs_awssdk_secret_key', update_variable_get('s3fs_awssdk_secret_key'));
-  $config->set('s3fs_awssdk_default_cache_$config', update_variable_get('s3fs_awssdk_default_cache_$config'));
+  $config->set('s3fs_awssdk_default_cache_$config', update_variable_get('s3fs_awssdk2_default_cache_$config'));
+  $config->set('s3fs_awssdk_default_cache_$config', update_variable_get('s3fs_awssdk2_default_cache_$config'));
   $config->set('s3fs_no_redirect_derivatives', update_variable_get('s3fs_no_redirect_derivatives'));
 
   $config->save();

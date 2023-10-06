@@ -9,10 +9,7 @@
  * stream wrapper, too.
  */
 
-// If using Libraries instead of Composer Manager, load the AWS SDK.
-if (!module_exists('composer_manager')) {
-  _s3fs_load_awssdk_library();
-}
+_s3fs_load_awssdk_library();
 
 use Aws\CacheInterface;
 use Aws\S3\Exception\S3Exception;
@@ -170,14 +167,17 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
     // Always use HTTPS when the page is being served via HTTPS, to avoid
     // complaints from the browser about insecure content.
     global $is_https;
-    /* if ($is_https) {
-       // We change the config itself, rather than simply using $is_https in
-       // the following if condition, because $this->config['use_https'] gets
-       // used again later.
-       $this->config->get('s3fs_use_https') = TRUE;
-     }*/
+    if ($is_https) {
+      // Set the 's3fs_use_https' configuration value to TRUE.
+      config_set('s3fs.settings', 's3fs_use_https', TRUE);
+    }
 
-    $scheme = (!empty($this->config->get('s3fs_use_https'))) ? 'https' : 'http';
+    // Retrieve the 's3fs_use_https' configuration value.
+    $s3fs_use_https = config('s3fs.settings')->get('s3fs_use_https');
+
+
+    // Use the value to determine the scheme.
+    $scheme = $s3fs_use_https ? 'https' : 'http';
 
     // CNAME support for customizing S3 URLs.
     // If use_cname is not enabled, file URLs do not use $this->domain.
@@ -687,7 +687,7 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
     }
     // Set the Cache-Control header, if the user specified one.
     if (!empty($this->config->get('s3fs_cache_control_header'))) {
-      $options[$this->protocol]['CacheControl'] = $this->config['cache_control_header'];
+      $options[$this->protocol]['CacheControl'] = config('s3fs.settings')->get('cache_control_header');
     }
 
     if (!empty($this->config->get('s3fs_encryption'))) {

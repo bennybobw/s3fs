@@ -314,7 +314,7 @@ function _s3fs_image_style_deliver($style, $scheme) {
  *   TRUE if config is good to go, otherwise FALSE.
  */
 function _s3fs_validate_config($config) {
-  // Assuming your configuration values are stored in the database using config().
+
   $s3fs_use_customhost = config('s3fs.settings')->get('s3fs_use_customhost');
   $s3fs_hostname = config('s3fs.settings')->get('s3fs_hostname');
   $s3fs_use_cname = config('s3fs.settings')->get('s3fs_use_cname');
@@ -434,8 +434,11 @@ function _s3fs_refresh_cache($config) {
     );
     return;
   }
-  if (function_exists('bee_log')) {
-    bee_log('Getting Amazon S3 client...');
+  if (function_exists('bee_message')) {
+    bee_message (bt('Getting Amazon S3 client...'), 'log');
+  }
+  if (function_exists('drush_log')) {
+    drush_log('Getting Amazon S3 client...');
   }
   $s3 = _s3fs_get_amazons3_client($config);
 
@@ -454,8 +457,11 @@ function _s3fs_refresh_cache($config) {
   $op_name = (config('s3fs.settings')->get('s3fs_use_versioning')) ? 'ListObjectVersions' : 'ListObjects';
   $iterator = $s3->getPaginator($op_name, $iterator_args);
 
-  if (function_exists('bee_log')) {
-    bee_log('Creating temporary tables...');
+  if (function_exists('bee_message')) {
+    bee_message(bt('Creating temporary tables...'), 'log');
+  }
+  if (function_exists('drush_log')) {
+    drush_log('Creating temporary tables...');
   }
 
   // Create the temp table, into which all the refreshed data will be written.
@@ -610,13 +616,17 @@ function _s3fs_refresh_cache($config) {
 
   // Write any remainders.
   $insert_query->execute();
-  if (function_exists('bee_log')) {
-    bee_log(
-      dt('Flushed @folders folders to the file table.', [
-        '@folders' => $folder_counter,
-      ])
-    );
+  if (function_exists('bee_message')) {
+    bee_message(bt('Flushed @folders folders to the file table.', array(
+      '@folders' => $folder_counter,
+    )), 'log');
   }
+  if (function_exists('drush_log')) {
+    drush_log(dt('Flushed @folders folders to the file table.', array(
+      '@folders' => $folder_counter,
+    )));
+  }
+
   // Cleanup.
   db_drop_table('s3fs_folder_temp');
 
@@ -625,11 +635,12 @@ function _s3fs_refresh_cache($config) {
   db_rename_table('s3fs_file_temp', 's3fs_file');
   db_drop_table('s3fs_file_old');
 
-  if (function_exists('bee_log')) {
-    bee_log(dt('S3 File System cache refreshed.'));
+
+  if (function_exists('drush_log')) {
+    drush_log(dt('S3 File System cache refreshed.'));
   }
   else {
-    bee_message(t('S3 File System cache refreshed.'));
+    bee_message(bt('S3 File System cache refreshed.'));
   }
 }
 
@@ -670,12 +681,15 @@ function _s3fs_write_metadata(&$file_metadata_list, &$folders) {
       }
     }
     $insert_query->execute();
-    if (function_exists('bee_log')) {
-      bee_log(
-        '  ' . dt('Wrote @files file(s).', [
+    if (function_exists('bee_message')) {
+      bee_message('  ' . bt('Wrote @files file(s).', array(
           '@files' => count($file_metadata_list),
-        ])
-      );
+        )), 'log');
+    }
+    if (function_exists('drush_log')) {
+      drush_log('  ' . dt('Wrote @files file(s).', array(
+          '@files' => count($file_metadata_list),
+        )));
     }
 
     // Empty out the file array, so it can be re-filled by the next request.
@@ -695,13 +709,15 @@ function _s3fs_write_metadata(&$file_metadata_list, &$folders) {
       }
     }
     $insert_query->execute();
-
-    if (function_exists('bee_log')) {
-      bee_log(
-        '  ' . dt('Wrote @folders folder(s).', [
+    if (function_exists('bee_message')) {
+      bee_message('  ' . bt('Wrote @folders folder(s).', array(
           '@folders' => count($folders),
-        ])
-      );
+        )), 'log');
+    }
+    if (function_exists('drush_log')) {
+      drush_log('  ' . dt('Wrote @folders folder(s).', array(
+          '@folders' => count($folders),
+        )));
     }
 
     // Empty out folders as well; consolidation will take care of duplicates.
@@ -783,7 +799,7 @@ function _s3fs_get_amazons3_client() {
   // different from the previous call, (re)build the client.
   if (!isset($s3) || $static_config != $config) {
     // Check if the keys managed by the Key module exist.
-    if (module_exists('key')) {
+    if (module_exists('key') && module_enable('key')) {
   // Load the keys from the Key module configuration.
   $key_config = config('key.module');
 
@@ -909,13 +925,13 @@ function _s3fs_get_config($reset = FALSE) {
     }
     // Remove any leading or trailing slashes from these settings, in case the user added them.
     if (!empty($config['s3fs_root_folder'])) {
-      $config['root_folder'] = trim($config['root_folder'], '\/');
+      $config['s3fs_root_folder'] = trim($config['s3fs_root_folder'], '\/');
     }
     if (!empty($config['s3fs_public_folder'])) {
-      $config['public_folder'] = trim($config['public_folder'], '\/');
+      $config['s3fs_public_folder'] = trim($config['s3fs_public_folder'], '\/');
     }
     if (!empty($config['s3fs_private_folder'])) {
-      $config['private_folder'] = trim($config['private_folder'], '\/');
+      $config['s3fs_private_folder'] = trim($config['s3fs_private_folder'], '\/');
     }
   }
   return $config;
@@ -983,10 +999,10 @@ function _s3fs_copy_file_system_to_s3($scheme) {
     $source_folder = config_get('system.core', 'file_private_path');
     $source_folder_real = realpath($source_folder);
     if (empty($source_folder) || empty($source_folder_real)) {
-      bee_message(
+      bee_message (bt(
         'Private file system base path is unknown. Unable to perform S3 copy.',
         'error'
-      );
+      ));
       return;
     }
   }

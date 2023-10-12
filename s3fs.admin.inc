@@ -8,8 +8,9 @@ use Aws\Api;
  * Builds the Settings form.
  */
 function s3fs_settings($form, &$form_state) {
-  $config = config('s3fs.settings');
+  //$config = config('s3fs.settings');
   $form['#config'] = 's3fs.settings';
+  $config = config($form['#config']);
   // @todo Read endpoints from (composer_manager_vendor_dir() . 'aws/aws-sdk-php/src/data/endpoints.json')
   $region_map = array(
     'af-south-1' => t('Africa - Cape Town (af-south-1)'),
@@ -58,8 +59,8 @@ function s3fs_settings($form, &$form_state) {
 
   // Add the provided text as a markup element within the fieldset.
   $form['aws_credentials']['markup'] = array(
-    '#markup' => "<pre>\$config['s3fs.settings']['s3fs_awssdk_access_key'] = 'your_access_key';<br>" .
-      "\$config['s3fs.settings']['s3fs_awssdk_secret_key'] = 'your_secret_key';</pre>"
+    '#markup' => "\$config['s3fs.settings']['s3fs_awssdk_access_key'] = 'your_access_key';<br>" .
+      "\$config['s3fs.settings']['s3fs_awssdk_secret_key'] = 'your_secret_key';"
   );
 
   // Check if the Key module is enabled.
@@ -393,7 +394,7 @@ if (module_exists('key')) {
   );
 
 
-  $form['advanced']['additional_folders'] = array(
+  $form['advanced']['s3fs_additional_folders'] = array(
     '#type' => 'fieldset',
     '#title' => t('Additional Folder Settings'),
     '#collapsible' => TRUE,
@@ -479,10 +480,12 @@ if (module_exists('key')) {
  * Validates the values on the admin form.
  */
 function s3fs_settings_validate($form, &$form_state) {
-  $config_from_form = _s3fs_convert_form_state_to_config($form_state);
+  //$config_from_form = _s3fs_convert_form_state_to_config($form_state);
   // Get all the saved settings from s3fs_get_config(), then override them with the config from the form.
-  $config = array_merge(_s3fs_get_config(), $config_from_form);
-  _s3fs_validate_config($config);
+  /*$config = array_merge(_s3fs_get_config(), $config_from_form);
+  _s3fs_validate_config($config);*/
+  $config = config('s3fs.settings');
+  $config = _s3fs_validate_config($config);
 }
 
 /**
@@ -492,9 +495,9 @@ function _s3fs_convert_form_state_to_config($form_state) {
   $config = array();
   foreach ($form_state['values'] as $name => $value) {
     // If the name starts with 's3fs_', strip that off and save the value.
-    if (substr($name, 0, 5) == 's3fs_') {
+    /*if (substr($name, 0, 5) == 's3fs_') {
       $config[substr($name, 5)] = $value;
-    }
+    }*/
   }
   return $config;
 }

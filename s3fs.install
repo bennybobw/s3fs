@@ -177,8 +177,6 @@ function s3fs_update_1000()
   $config->set('s3fs_presigned_urls', update_variable_get('s3fs_presigned_urls'));
   $config->set('s3fs_saveas', update_variable_get('s3fs_saveas'));
   $config->set('s3fs_torrents', update_variable_get('s3fs_torrents'));
-  $config->set('s3fs_allow_relative', update_variable_get('s3fs_allow_relative'));
-  $config->set('s3fs_use_relative_urls', update_variable_get('s3fs_use_relative_urls'));
   $config->set('s3fs_use_instance_profile', update_variable_get('s3fs_instance_profile'));
   $config->set('s3fs_awssdk_use_instance_profile', update_variable_get('s3fs_awssdk_use_instance_profile'));
   $config->set('s3fs_file_uri_scheme_override', update_variable_get('s3fs_file_uri_scheme_override'));
@@ -192,8 +190,6 @@ function s3fs_update_1000()
 
   update_variable_del('s3fs_use_customhost');
   update_variable_del('s3fs_use_cname');
-  update_variable_del('s3fs_allow_relative');
-  update_variable_del('s3fs_use_relative_urls');
   update_variable_del('s3fs_use_instance_profile');
   update_variable_del('s3fs_awssdk_use_instance_profile');
   update_variable_del('s3fs_no_rewrite_cssjs');

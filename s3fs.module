@@ -629,7 +629,7 @@ function _s3fs_refresh_cache($config) {
     bee_log(dt('S3 File System cache refreshed.'));
   }
   else {
-    backdrop_set_message(t('S3 File System cache refreshed.'));
+    bee_message(t('S3 File System cache refreshed.'));
   }
 }
 
@@ -1122,7 +1122,7 @@ function s3fs_copy_system_images_confirm_form_submit($form, &$form_state) {
   $directories = $form_state['build_info']['system_image_directories'];
   s3fs_copy_system_images_batch_set($wrapper, $directories);
 
-  backdrop_set_message(t('Copying of system images from modules, themes, and libraries to S3 is complete.'));
+  bee_message(t('Copying of system images from modules, themes, and libraries to S3 is complete.'));
   $form_state['redirect'] = array('path' => 'admin/config/media/s3fs/actions');
 }
 

@@ -41,15 +41,33 @@ function s3fs_requirements($phase)
       'severity' => REQUIREMENT_OK,
     );
   } else {
-    $requirements['s3fs_int64'] = array(
+    $requirements['s3fs_int64'] = [
       'title' => $t('PHP architecture'),
       'value' => $t('32-bit'),
-      'description' => $t('A 64-bit PHP installation is required in order to support files larger than 2GB.'),
+      'description' => $t(
+        'A 64-bit PHP installation is required in order to support files larger than 2GB.'
+      ),
       'severity' => REQUIREMENT_WARNING,
-    );
+    ];
   }
 
+  // Assuming you have included or loaded the AWS SDK for PHP.
+  _s3fs_load_awssdk_library();
 
+  // Check if the AWS SDK constant 'AWS_SDK_VERSION' exists.
+  if (defined('Aws\Sdk::VERSION')) {
+    $awsSdkVersion = Aws\Sdk::VERSION;
+  } else {
+    // If the constant doesn't exist, you can set a default value.
+    $awsSdkVersion = 'Version not available';
+  }
+
+  // Now, you can use $awsSdkVersion in your requirements message.
+  $requirements['s3fs_awssdk'] = array(
+    'title' => t('AWS SDK for PHP'),
+    'value' => t('Installed version: @version', array('@version' => $awsSdkVersion)),
+    'severity' => REQUIREMENT_OK,
+  );
 
 
   return $requirements;
@@ -70,12 +88,9 @@ function s3fs_uninstall()
   }
 
   // Remove 's3' from the list of public file schemas.
-  // TODO This variable was probably removed in Backdrop without replacement.
-  $public_schema = config_get('file_public_schema');
-  if (is_array($public_schema) && in_array('s3', $public_schema)) {
-    $public_schema = array_diff($public_schema, array('s3'));
-    // TODO This variable was probably removed in Backdrop without replacement.
-    config_set('file_public_schema', $public_schema);
+  $file_schema = config_get('system.core', 'file_default_scheme');
+  if ($file_schema === 's3') {
+    config_set('system.core', 'file_default_scheme', 'public');
   }
 }
 

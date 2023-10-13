@@ -178,6 +178,7 @@ This needs to be done in settings.php or by using the Key module.
 
 Advanced features have not been fully tested.
 
+The tests probably do not work.
 
 ## Issues
 

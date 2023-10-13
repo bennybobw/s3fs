@@ -639,7 +639,7 @@ function _s3fs_refresh_cache($config) {
   if (function_exists('drush_log')) {
     drush_log(dt('S3 File System cache refreshed.'));
   }
-  else {
+  if (function_exists('bee_message')) {
     bee_message(bt('S3 File System cache refreshed.'));
   }
 }

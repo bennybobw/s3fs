@@ -1,7 +1,6 @@
 {
     "_config_name": "s3fs.settings",
     "s3fs_use_instance_profile": 0,
-    "s3fs_awssdk_use_instance_profile": "",
     "s3fs_no_rewrite_cssjs": 0,
     "s3fs_file_uri_scheme_override": false,
     "s3fs_bucket": "",

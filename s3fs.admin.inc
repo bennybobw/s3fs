@@ -479,26 +479,26 @@ if (module_exists('key')) {
 /**
  * Validates the values on the admin form.
  */
-function s3fs_settings_validate($form, &$form_state) {
+/* function s3fs_settings_validate($form, &$form_state) {
   $config_from_form = _s3fs_convert_form_state_to_config($form_state);
   // Get all the saved settings from s3fs_get_config(), then override them with the config from the form.
   $config = array_merge(_s3fs_get_config(), $config_from_form);
   _s3fs_validate_config($config);
-}
+} */
 
 /**
  * Converts a $form_state array to a configuration settings array.
  */
-function _s3fs_convert_form_state_to_config($form_state) {
+/* function _s3fs_convert_form_state_to_config($form_state) {
   $config = array();
   foreach ($form_state['values'] as $name => $value) {
     // If the name starts with 's3fs_', strip that off and save the value.
-    /*if (substr($name, 0, 5) == 's3fs_') {
+    if (substr($name, 0, 5) == 's3fs_') {
       $config[substr($name, 5)] = $value;
-    }*/
+    }
   }
   return $config;
-}
+} */
 
 /**
  * Builds the Actions form.

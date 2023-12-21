@@ -803,9 +803,9 @@ function _s3fs_get_amazons3_client() {
   // Load the keys from the Key module configuration.
   $key_config = config('key.module');
 
-  // Get the key values using key_get_key_value().
-  $access_key = key_get_key_value('s3fs_access_key');
-  $secret_key = key_get_key_value('s3fs_secret_key');
+   // Get the key values using key_get_key_value().
+  $access_key = key_get_key_value($config->get('keymodule_access_key_name'));
+  $secret_key = key_get_key_value($config->get('keymodule_secret_key_name'));
 
   if ($access_key === null || $secret_key === null) {
     // If the keys are not set in the Key module configuration, fall back to S3FS configuration.

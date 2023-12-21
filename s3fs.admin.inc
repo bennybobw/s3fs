@@ -87,6 +87,20 @@ if (module_exists('key')) {
       ],
     ],
   ];
+  // AWS Secret Key (Select element)
+  $form['aws_credentials']['keymodule']['keymodule_secret_key_name'] = [
+    '#type' => 'key_select',
+    '#title' => t('Amazon Web Services Secret Key'),
+    '#default_value' => $config->get('keymodule_secret_key_name'),
+    '#key_filters' => ['type' => 'authentication'],
+    '#options' => key_get_key_names_as_options(),
+    '#description' => t('Select a key containing the AWS secret key.'),
+    '#states' => [
+      'visible' => [
+        ':input[name="keymodule"]' => ['checked' => TRUE],
+      ],
+    ],
+  ];
 }
 
 

@@ -87,6 +87,7 @@ if (module_exists('key')) {
       ],
     ],
   ];
+
   // AWS Secret Key (Select element)
   $form['aws_credentials']['keymodule']['keymodule_secret_key_name'] = [
     '#type' => 'key_select',

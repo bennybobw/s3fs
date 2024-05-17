@@ -253,9 +253,10 @@ class S3fsStreamWrapper extends StreamWrapper implements BackdropStreamWrapperIn
    * @param string $protocol
    * @param \Aws\CacheInterface|null $cache
    */
-  public static function register(S3ClientInterface $client, $protocol = 's3', CacheInterface $cache = null) {
-    parent::register($client, $protocol, $cache);
+  public static function register(S3ClientInterface $client, $protocol = 's3', CacheInterface $cache = null, $v2Existence = false) {
+    parent::register($client, $protocol, $cache, $v2Existence);
   }
+
 
   /***************************************************************************
   BackdropStreamWrapperInterface Implementations

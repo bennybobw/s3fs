@@ -3,9 +3,3 @@ name = S3 File System Tests
 description = Ensure that the remote file system functionality provided by S3 File System works correctly.
 group = S3 File System
 file = s3fs.test
-
-
-; Added by Backdrop CMS packaging script on 2023-10-13
-project = s3fs
-version = 1.x-3.0.6
-timestamp = 1697207095

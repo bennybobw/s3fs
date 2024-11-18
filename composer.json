@@ -1,0 +1,16 @@
+{
+    "name": "backdrop/s3fs",
+    "description": "Adds an Amazon Simple Storage Service-based remote file system to Backdrop CMS.",
+    "type": "project",
+    "license": "GPL-2.0-or-later",
+    "authors": [
+        {
+            "name": "Justin Keiser",
+            "homepage": "https://keiserjb.com",
+            "role": "Maintainer"
+        }
+    ],
+    "require": {
+        "aws/aws-sdk-php": "^3.18"
+    }
+}

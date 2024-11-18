@@ -194,6 +194,8 @@ Bugs and feature requests should be reported in [the Issue Queue](https://github
 
 - Seeking additional maintainers.
 
+- This module is supported by the [Academy of Model Aeronautics](https://www.modelaircraft.org/).
+
 ## Credits
 
 -------

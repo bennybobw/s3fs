@@ -170,7 +170,7 @@ function s3fs_update_1000()
 {
   $config = config('s3fs.settings');
 
-  $config->set('s3fs_bucket', update_variable_get('s3fs_bucket'()));
+  $config->set('s3fs_bucket', update_variable_get('s3fs_bucket'));
   $config->set('s3fs_region', update_variable_get('s3fs_region'));
   $config->set('s3fs_use_cname', update_variable_get('s3fs_use_cname'));
   $config->set('s3fs_domain', update_variable_get('s3fs_domain'));
